@@ -1,0 +1,38 @@
+---
+description: Force commit messages to be in English with emojis, following Conventional Commits
+globs: ['**/*']
+alwaysApply: true
+---
+
+# Commit Message Conventions
+
+Generate commit messages in English using the Conventional Commits specification.
+Always follow this format:
+`<type>: <emoji> <short description in English>`
+
+## Type → Emoji Mapping:
+
+- feat: ✨ or 🚀 or 🎉
+- fix: 🐛 or 🔥
+- docs: 📝 or 📖
+- style: 🎨 or 💄
+- refactor: 🔥 or 🔄 or 🚧
+- perf: 🚀 or ⚡️
+- test: ✅ or 🧪
+- build: 📦 or 🔨
+- ci: 🤖 or 🤖️
+- chore: 🏗️ or 🚧
+- revert: ⏪ or ↩️
+
+## Examples:
+
+- feat: ✨ add user login functionality
+- fix: 🐛 handle expired tokens properly
+- docs: 📝 update API usage instructions
+- style: 🎨 reformat code for consistency
+- refactor: ♻️ simplify order processing logic
+- perf: ⚡ improve query performance
+- test: ✅ add unit tests for checkout flow
+- build: 📦 configure webpack for production
+- ci: 🤖 add GitHub Actions workflow
+- chore: 🔧 update dependencies

@@ -1,0 +1,21 @@
+{
+  "recommendations": [
+    "denoland.vscode-deno",
+    "deinsoftware.arrow-function-snippets",
+    "formulahendry.auto-close-tag",
+    "formulahendry.auto-rename-tag",
+    "streetsidesoftware.code-spell-checker",
+    "wallabyjs.console-ninja",
+    "vivaxy.vscode-conventional-commits",
+    "usernamehw.errorlens",
+    "dbaeumer.vscode-eslint",
+    "github.vscode-github-actions",
+    "eamodio.gitlens",
+    "swiftlydaniel.oklch-color-visualiser",
+    "esbenp.prettier-vscode",
+    "yoavbls.pretty-ts-errors",
+    "streetsidesoftware.code-spell-checker-spanish",
+    "bradlc.vscode-tailwindcss",
+    "meganrogge.template-string-converter"
+  ]
+}

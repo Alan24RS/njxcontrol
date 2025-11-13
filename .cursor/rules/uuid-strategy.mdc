@@ -1,0 +1,259 @@
+# UUID Strategy - Valet Project
+
+## Overview
+
+This document outlines the strategy for managing UUIDs in the Valet project to ensure consistency, validity, and maintainability.
+
+## UUID Standard
+
+**All UUIDs MUST comply with RFC 4122** standard. This ensures compatibility with:
+- PostgreSQL's `uuid` type
+- Zod's `.uuid()` validator
+- Supabase's internal validation
+
+### Valid RFC 4122 UUID Structure
+
+```
+xxxxxxxx-xxxx-Vxxx-Nxxx-xxxxxxxxxxxx
+              ^    ^
+              |    |
+              |    +-- Variant (bits must be 10xx)
+              +------- Version (1-5)
+```
+
+**Example valid UUIDs:**
+- `0c0d0388-82f9-46a4-8af7-df05c615ccff` ✅
+- `5985117f-a0b1-4a4f-9fe0-047a627d67c1` ✅
+
+**Example invalid UUIDs:**
+- `c7f8e9d0-1a2b-3c4d-5e6f-7890abcdef01` ❌ (wrong variant bits)
+- `00000000-0000-0000-0000-000000000000` ❌ (nil UUID, version/variant incorrect)
+
+## Centralized UUID Management
+
+### File Structure
+
+```
+scripts/
+  └── seeds/
+      └── dev/
+          ├── uuids.ts          # ⭐ CENTRALIZED UUID SOURCE
+          ├── ciudades.ts       # imports from uuids.ts
+          ├── playas.ts         # imports from uuids.ts
+          └── users.ts          # imports from uuids.ts
+  └── utils/
+      └── generateUuid.ts       # deprecated, use uuids.ts instead
+```
+
+### `scripts/seeds/dev/uuids.ts`
+
+This is the **single source of truth** for all seed UUIDs.
+
+**Benefits:**
+1. **Consistency:** All related entities use the same UUIDs across files
+2. **Validation:** All UUIDs are RFC 4122 compliant
+3. **Discoverability:** Easy to find and update UUIDs
+4. **Type Safety:** TypeScript constants with `as const` for immutability
+5. **Foreign Key Safety:** Related entities reference the same UUID constants
+
+**Contents:**
+- City IDs (`CIUDAD_RESISTENCIA_ID`, `CIUDAD_CORRIENTES_ID`)
+- Playa IDs (`PLAYA_1_ID`, `PLAYA_2_ID`, etc.)
+- Plaza ID mappings grouped by playa (`PLAYA_1_PLAZAS`, `PLAYA_2_PLAZAS`, etc.)
+- Utility functions for generating new UUIDs
+
+**Example usage:**
+
+```typescript
+// ✅ CORRECT: Import from centralized uuids.ts
+import { PLAYA_1_ID, PLAYA_1_PLAZAS, CIUDAD_RESISTENCIA_ID } from './uuids'
+
+export const testPlayas = [
+  {
+    playa_id: PLAYA_1_ID,
+    ciudad_id: CIUDAD_RESISTENCIA_ID,
+    nombre: 'UTN-Parking',
+    // ...
+  }
+]
+
+export const testPlazas = [
+  {
+    playa_id: PLAYA_1_ID,  // ✅ FK consistency guaranteed
+    plazas: [
+      {
+        plaza_id: PLAYA_1_PLAZAS.PLAZA_1,  // ✅ Uses centralized constant
+        identificador: 'A1',
+        // ...
+      }
+    ]
+  }
+]
+```
+
+```typescript
+// ❌ WRONG: Hardcoded UUIDs scattered across files
+export const testPlazas = [
+  {
+    plaza_id: 'fa2aa7e0-c9da-4cf6-b6cf-625e7b8ddf4f',  // ❌ Hardcoded, may be invalid
+    playa_id: 'some-other-uuid',  // ❌ FK inconsistency risk
+    // ...
+  }
+]
+```
+
+## Generating New UUIDs
+
+### For Seed Data
+
+When adding new seed entities that need UUIDs:
+
+1. **Generate RFC 4122 compliant UUIDs** using Node.js `crypto.randomUUID()`:
+
+```bash
+node --input-type=module -e "import { randomUUID } from 'crypto'; console.log(randomUUID())"
+```
+
+2. **Add them to `scripts/seeds/dev/uuids.ts`** with descriptive constant names:
+
+```typescript
+export const PLAYA_5_ID = 'newly-generated-uuid-here'
+export const PLAYA_5_PLAZAS = {
+  PLAZA_1: 'another-generated-uuid',
+  PLAZA_2: 'another-generated-uuid',
+  // ...
+} as const
+```
+
+3. **Import and use** the constants in seed files:
+
+```typescript
+import { PLAYA_5_ID, PLAYA_5_PLAZAS } from './uuids'
+```
+
+### For Production/Runtime
+
+**Never hardcode UUIDs** in production code. Use:
+- `crypto.randomUUID()` in Node.js
+- Supabase's `gen_random_uuid()` in SQL
+- Let the database generate UUIDs automatically
+
+## Validation
+
+### At Seed Time
+
+The `uuids.ts` file includes a validator function:
+
+```typescript
+export function isValidRFC4122UUID(uuid: string): boolean {
+  const version = parseInt(uuid[14], 16)
+  const variant = parseInt(uuid[19], 16)
+  return version >= 1 && version <= 5 && variant >= 8 && variant <= 11
+}
+```
+
+Use this to validate UUIDs before adding them to seeds.
+
+### In Application Code
+
+Use Zod's built-in `.uuid()` validator:
+
+```typescript
+import { z } from 'zod'
+
+const schema = z.object({
+  playaId: z.string().uuid('Invalid playa ID'),  // ✅ Validates RFC 4122
+  plazaId: z.string().uuid('Invalid plaza ID')
+})
+```
+
+**Never use regex-based validation** as a replacement for `.uuid()` unless absolutely necessary (e.g., legacy non-compliant UUIDs).
+
+## Migration UUIDs
+
+**UUIDs in migrations are acceptable** for:
+- Cleanup scripts that target specific production test data
+- One-time data migrations for specific records
+- Functions that operate on specific user IDs
+
+**Example:** `supabase/migrations/20250917040717_cleanup_test_user.sql` deletes specific test users by their UUID. This is valid because it refers to real, existing user IDs in production.
+
+## Common Pitfalls
+
+### ❌ DON'T: Hardcode UUIDs across multiple files
+
+```typescript
+// playas.ts
+export const testPlayas = [
+  { playa_id: 'abc-123-...' }
+]
+
+// plazas.ts
+export const testPlazas = [
+  { playa_id: 'abc-123-...' }  // Duplication risk!
+]
+```
+
+### ✅ DO: Use centralized constants
+
+```typescript
+// uuids.ts
+export const PLAYA_1_ID = 'abc-123-...'
+
+// playas.ts
+import { PLAYA_1_ID } from './uuids'
+export const testPlayas = [{ playa_id: PLAYA_1_ID }]
+
+// plazas.ts
+import { PLAYA_1_ID } from './uuids'
+export const testPlazas = [{ playa_id: PLAYA_1_ID }]
+```
+
+### ❌ DON'T: Use `.regex()` as a replacement for `.uuid()`
+
+```typescript
+// ❌ Bad: Allows non-RFC 4122 UUIDs
+z.string().regex(/[0-9a-f-]{36}/)
+```
+
+### ✅ DO: Use Zod's `.uuid()` validator
+
+```typescript
+// ✅ Good: Enforces RFC 4122 compliance
+z.string().uuid('Invalid UUID')
+```
+
+### ❌ DON'T: Create UUIDs manually
+
+```typescript
+// ❌ Bad: May not be RFC 4122 compliant
+const uuid = 'c7f8e9d0-1a2b-3c4d-5e6f-7890abcdef01'
+```
+
+### ✅ DO: Generate using `crypto.randomUUID()`
+
+```typescript
+import { randomUUID } from 'crypto'
+const uuid = randomUUID()  // ✅ Guaranteed RFC 4122 v4
+```
+
+## Checklist for New Seeds
+
+When adding new seed data with UUIDs:
+
+- [ ] Generate UUIDs using `crypto.randomUUID()`
+- [ ] Validate they are RFC 4122 compliant using `isValidRFC4122UUID()`
+- [ ] Add them to `scripts/seeds/dev/uuids.ts` with descriptive names
+- [ ] Import and use constants (not hardcoded strings) in seed files
+- [ ] Ensure Foreign Key relationships use the same constant
+- [ ] Run `pnpm db:reset` to verify seeds work correctly
+- [ ] Run `pnpm typecheck` to ensure TypeScript is happy
+
+## Summary
+
+✅ **All seed UUIDs** → `scripts/seeds/dev/uuids.ts`
+✅ **All runtime UUIDs** → `crypto.randomUUID()` or database-generated
+✅ **All validations** → Zod's `.uuid()` validator
+✅ **All FK relationships** → Use shared constants from `uuids.ts`
+❌ **Never hardcode** UUIDs in multiple files
+❌ **Never use non-RFC 4122** UUIDs in new code

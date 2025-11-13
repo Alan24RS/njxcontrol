@@ -1,0 +1,538 @@
+---
+description: Guide for choosing between Server Actions vs Direct Services in forms and operations
+globs:
+  ['src/app/**/*', 'src/components/**/*', 'src/hooks/**/*', 'src/services/**/*']
+alwaysApply: false
+---
+
+# Form Implementation Patterns
+
+## Decision Framework for Forms and Operations
+
+### ✅ USE SERVER ACTIONS FOR:
+
+- **CRUD operations** (create, edit, delete entities)
+- **Authentication forms** (login, signup, password)
+- **Single-step forms** with Zod validation
+- **Operations NOT using TanStack Query for data fetching**
+
+**Pattern:** `useActionState + FormData + Zod validation`
+
+### ✅ USE TANSTACK QUERY MUTATIONS FOR:
+
+- **Status updates in data tables** (ACTIVE → SUSPENDED)
+- **Operations on entities already using TanStack Query**
+- **Multi-step complex forms** (like CompletePlayaSetupModal)
+- **Search/autocomplete functionality**
+- **Operations requiring optimistic updates**
+- **Complex conditional logic** or multiple validation steps
+- **Fine-grained UI state control**
+
+**Pattern:** `useMutation + queryClient.invalidateQueries`
+
+### ✅ USE TANSTACK QUERY (useQuery) FOR DATA FETCHING:
+
+- **Reading data in Client Components** (lists, details, tables)
+- **Real-time data updates** with automatic refetching
+- **Client-side caching** and state management
+- **Paginated or filtered lists**
+
+**Pattern:** `useQuery + Server Action wrapper (queries.ts)`
+
+**⚠️ CRITICAL:** Services using `createClient()` from `@/lib/supabase/server` CANNOT be called directly from Client Components because they import `next/headers`. You MUST create a Server Action wrapper.
+
+## 🎯 Consistency Rules:
+
+- Similar operations should use the same pattern
+- Deletions should match creation patterns (migrate to Server Actions)
+- Status updates should be consistent across entities
+- Follow existing patterns in the codebase
+
+## 📋 Decision Checklist:
+
+1. **Are you READING data in a Client Component?** → **TanStack Query (useQuery) + Server Action wrapper**
+2. Is the data already managed by TanStack Query? → **TanStack Query Mutation**
+3. Is it a status update in a data table? → **TanStack Query Mutation**
+4. Is it a basic CRUD form (create/edit)? → **Server Action**
+5. Does it need multiple steps/validations? → **TanStack Query Mutation**
+6. Is it similar to existing operations? → **Use same pattern**
+7. Is Zod validation sufficient and no TanStack Query? → **Server Action**
+
+## Server Action Template:
+
+```typescript
+// actions.ts
+'use server'
+
+import { revalidatePath } from 'next/cache'
+
+import { createEntitySchema } from '@/schemas/entity'
+import { createEntity } from '@/services/entities'
+
+type FormState = {
+  success: boolean
+  fields?: Record<string, string>
+  errors?: Record<string, string[]>
+}
+
+export async function createEntityAction(
+  prevState: FormState,
+  payload: FormData
+): Promise<FormState> {
+  if (!(payload instanceof FormData)) {
+    return {
+      success: false,
+      errors: { error: ['Datos de formulario inválidos'] }
+    }
+  }
+
+  const formData = Object.fromEntries(payload)
+  const parsed = createEntitySchema.safeParse(formData)
+
+  if (!parsed.success) {
+    const errors = parsed.error.flatten().fieldErrors
+    const fields: Record<string, string> = {}
+
+    for (const key of Object.keys(formData)) {
+      fields[key] = formData[key].toString()
+    }
+
+    return {
+      success: false,
+      fields,
+      errors
+    }
+  }
+
+  const result = await createEntity(parsed.data)
+
+  if (result.error) {
+    return {
+      success: false,
+      errors: { general: [result.error] }
+    }
+  }
+
+  // ⚠️ CRITICAL: Always include revalidatePath for immediate UI refresh
+  revalidatePath('/admin/entities')
+
+  return { success: true }
+}
+
+// Component
+'use client'
+
+import { startTransition, useActionState, useEffect, useRef } from 'react'
+import { useForm } from 'react-hook-form'
+import { useRouter } from 'next/navigation'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { toast } from 'sonner'
+
+import { createEntityAction } from './actions'
+
+export function CreateEntityForm() {
+  const [formState, formAction, pending] = useActionState(createEntityAction, {
+    success: false
+  })
+  const router = useRouter()
+  const formRef = useRef<HTMLFormElement>(null)
+  const processedSuccessRef = useRef(false)
+
+  const form = useForm({
+    resolver: zodResolver(createEntitySchema),
+    mode: 'onChange'
+  })
+
+  const { control, handleSubmit } = form
+
+  useEffect(() => {
+    if (formState.success && !processedSuccessRef.current) {
+      processedSuccessRef.current = true
+      toast.success('Entity created successfully')
+      router.push('/admin/entities')
+    } else if (formState.errors) {
+      Object.entries(formState.errors).forEach(([field, errors]) => {
+        if (field === 'general') {
+          toast.error('Error creating entity', {
+            description: errors.join(', ')
+          })
+        }
+      })
+    }
+  }, [formState.success, formState.errors, router])
+
+  return (
+    <form
+      ref={formRef}
+      action={formAction}
+      onSubmit={(evt) => {
+        evt.preventDefault()
+        handleSubmit(() => {
+          startTransition(() => {
+            formAction(new FormData(formRef.current!))
+          })
+        })(evt)
+      }}
+    >
+      {/* Form fields */}
+      <button type="submit" disabled={pending}>
+        {pending ? 'Creating...' : 'Create'}
+      </button>
+    </form>
+  )
+}
+```
+
+## TanStack Query Mutation Template:
+
+```typescript
+// hooks/mutations/entities.tsx
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { updateEntityStatus } from '@/services/entities'
+
+export const useUpdateEntityStatus = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (params: UpdateEntityStatusParams) => {
+      const result = await updateEntityStatus(params)
+
+      if (result.error) {
+        throw new Error(result.error)
+      }
+
+      return result
+    },
+    onSuccess: () => {
+      // Invalidate related queries to update UI
+      queryClient.invalidateQueries({
+        queryKey: ['entities']
+      })
+    }
+  })
+}
+
+// Component
+const updateStatusMutation = useUpdateEntityStatus()
+
+const handleStatusChange = async (newStatus: string) => {
+  try {
+    await updateStatusMutation.mutateAsync({
+      entityId: entity.id,
+      status: newStatus
+    })
+    return { success: true, message: 'Status updated successfully' }
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : 'Unexpected error updating status'
+    return { success: false, message: errorMessage }
+  }
+}
+```
+
+## TanStack Query (useQuery) Data Fetching Template:
+
+```typescript
+// app/admin/entities/queries.ts
+'use server'
+
+import { getEntities } from '@/services/entities'
+import type { GetEntitiesParams } from '@/services/entities/types'
+
+export async function getEntitiesAction(params?: GetEntitiesParams) {
+  return await getEntities(params)
+}
+
+export async function getEntityByIdAction(id: string) {
+  return await getEntityById(id)
+}
+```
+
+```typescript
+// hooks/queries/entities/getEntities.tsx
+'use client'
+
+import { useQuery } from '@tanstack/react-query'
+
+import { getEntitiesAction } from '@/app/admin/entities/queries'
+import type { Entity } from '@/services/entities'
+import type { ApiResponse } from '@/types/api'
+
+export function useGetEntities(params?: GetEntitiesParams) {
+  return useQuery<ApiResponse<Entity[]>>({
+    queryKey: ['entities', params],
+    queryFn: async () => {
+      return await getEntitiesAction(params)
+    },
+    staleTime: 30 * 1000 // 30 seconds
+  })
+}
+```
+
+```typescript
+// Component
+'use client'
+
+import { useGetEntities } from '@/hooks/queries/entities/getEntities'
+
+export function EntitiesList() {
+  const { data, isLoading, error } = useGetEntities({
+    page: 1,
+    limit: 20
+  })
+
+  if (isLoading) return <Spinner />
+  if (error) return <ErrorMessage />
+
+  return (
+    <div>
+      {data?.data?.map((entity) => (
+        <EntityCard key={entity.id} entity={entity} />
+      ))}
+    </div>
+  )
+}
+```
+
+**Key Points:**
+
+- `queries.ts` acts as a Server Action wrapper for services
+- Located in the same `/app` directory as the feature (e.g., `/app/admin/entities/queries.ts`)
+- Named with `Action` suffix to distinguish from service functions
+- Enables Client Components to fetch data from Server-only services
+- Required when services use `createClient()` from `@/lib/supabase/server`
+
+## Direct Service Template (Legacy):
+
+```typescript
+// service.ts
+export async function operationEntity(
+  data: EntityData
+): Promise<ApiResponse<Entity>> {
+  // service logic
+}
+
+// Component
+const handleSubmit = async (data: EntityData) => {
+  setIsLoading(true)
+  try {
+    const result = await operationEntity(data)
+    if (result.error) {
+      toast.error(result.error)
+      return
+    }
+    toast.success('Operation successful')
+  } catch (error) {
+    toast.error('Unexpected error')
+  } finally {
+    setIsLoading(false)
+  }
+}
+```
+
+## 📂 File Organization:
+
+```
+app/admin/entities/
+├── queries.ts              # Server Action wrappers for data fetching
+├── actions.ts              # ALL Server Actions for mutations (create/update/delete)
+├── page.tsx               # Server Component (initial data load)
+└── components/
+    ├── EntitiesList.tsx   # Client Component using useQuery
+    └── CreateEntityForm.tsx # Client Component using useActionState
+
+hooks/
+├── queries/
+│   └── entities/
+│       ├── getEntities.tsx      # useQuery hook
+│       └── getEntityById.tsx    # useQuery hook
+└── mutations/
+    └── entities.tsx             # useMutation hooks
+
+services/
+└── entities/
+    ├── types.ts
+    ├── transformers.ts
+    ├── getEntities.ts           # Service function (uses Supabase server client)
+    ├── createEntity.ts
+    └── index.ts
+```
+
+**Naming Conventions:**
+
+- `queries.ts`: Server Action wrappers for READ operations (co-located with feature)
+- `actions.ts`: **ALL** Server Actions for WRITE operations - create, update, delete (co-located with feature)
+- `useGetX`: TanStack Query hooks in `hooks/queries/`
+- `useXMutation`: TanStack Query mutation hooks in `hooks/mutations/`
+- `XAction`: Server Action functions (suffixed with "Action")
+
+**⚠️ CRITICAL: Single actions.ts File Per Feature**
+
+**NEVER** create separate files like `delete-actions.ts`, `update-actions.ts`, etc.
+
+**❌ WRONG:**
+
+```
+app/admin/entities/
+├── actions.ts          # Only create actions
+├── delete-actions.ts   # ❌ NO! Causes fragmentation
+└── update-actions.ts   # ❌ NO! Causes fragmentation
+```
+
+**✅ CORRECT:**
+
+```
+app/admin/entities/
+└── actions.ts          # ALL mutations: create, update, delete
+```
+
+**Example of consolidated actions.ts:**
+
+```typescript
+'use server'
+
+import { revalidatePath } from 'next/cache'
+
+import { createEntity, updateEntity, deleteEntity } from '@/services/entities'
+
+export async function createEntityAction(prevState, payload) {
+  // ... create logic
+}
+
+export async function updateEntityAction(id, data) {
+  // ... update logic
+}
+
+export async function deleteEntityAction(id) {
+  // ... delete logic
+}
+```
+
+**Benefits of single file:**
+
+- All domain actions in one place
+- Easier to maintain and find
+- Consistent imports across codebase
+- Shared type definitions
+- Better code organization
+
+## ⚠️ Common Pitfalls:
+
+### Missing `revalidatePath`
+
+**Problem:** Table doesn't refresh after create/edit, requiring manual page reload.
+
+**Solution:** Always include `revalidatePath` in Server Actions:
+
+```typescript
+// ❌ BAD: No revalidation = slow/no refresh
+export async function createEntityAction(...) {
+  const result = await createEntity(data)
+  if (result.error) return { success: false, errors: ... }
+
+  return { success: true }  // UI won't update!
+}
+
+// ✅ GOOD: Immediate refresh
+export async function createEntityAction(...) {
+  const result = await createEntity(data)
+  if (result.error) return { success: false, errors: ... }
+
+  revalidatePath('/admin/entities')  // ✨ Refreshes data immediately
+  return { success: true }
+}
+
+// ✅ GOOD: Multiple paths (for detail + list pages)
+export async function updateEntityAction(...) {
+  const result = await updateEntity(id, data)
+  if (result.error) return { success: false, errors: ... }
+
+  revalidatePath('/admin/entities')      // List page
+  revalidatePath(`/admin/entities/${id}`) // Detail page
+  return { success: true }
+}
+```
+
+### Using Direct Service Calls Instead of Actions
+
+**Problem:** Using `router.refresh()` or manual invalidation instead of Server Actions.
+
+**Solution:** Refactor to use Server Actions with `revalidatePath`:
+
+```typescript
+// ❌ BAD: Client-side service call (old pattern)
+const handleSubmit = async (data) => {
+  const result = await updateEntity(id, data)
+  if (result.error) {
+    /* ... */
+  }
+  router.push('/admin/entities')
+  router.refresh() // May not refresh properly
+}
+
+// ✅ GOOD: Server Action with revalidatePath
+const [formState, formAction, pending] = useActionState(updateEntityAction, {
+  success: false
+})
+// Server Action handles revalidation automatically
+```
+
+### Calling Services Directly from Client Components
+
+**Problem:** Attempting to import and call server-only services from Client Components.
+
+**Error:**
+
+```
+Error: x You're importing a component that needs "next/headers".
+That only works in a Server Component which is not supported in the pages/ directory.
+
+Import trace:
+./src/lib/supabase/server.ts
+./src/services/entities/getEntities.ts
+./src/hooks/queries/entities/getEntities.tsx  ← Client Component!
+./src/app/admin/entities/components/EntitiesList.tsx
+```
+
+**Solution:** Always use Server Action wrappers (`queries.ts`) for data fetching:
+
+```typescript
+// ❌ BAD: Direct service import in Client Component
+'use client'
+import { getEntities } from '@/services/entities' // ❌ Error!
+
+export function useGetEntities() {
+  return useQuery({
+    queryFn: () => getEntities() // ❌ Breaks at build time
+  })
+}
+
+// ✅ GOOD: Server Action wrapper
+// app/admin/entities/queries.ts
+;('use server')
+export async function getEntitiesAction(params?: GetEntitiesParams) {
+  return await getEntities(params) // ✅ Server-side execution
+}
+
+// hooks/queries/entities/getEntities.tsx
+;('use client')
+import { getEntitiesAction } from '@/app/admin/entities/queries'
+
+export function useGetEntities() {
+  return useQuery({
+    queryFn: () => getEntitiesAction() // ✅ Works!
+  })
+}
+```
+
+**Why This Happens:**
+
+- Services use `createClient()` from `@/lib/supabase/server`
+- This function imports `next/headers` (cookies)
+- `next/headers` can only be used in Server Components/Actions
+- Client Components cannot import server-only modules
+- Server Actions bridge the client-server boundary
+
+**GOAL:** Consistency where possible, flexibility where necessary.

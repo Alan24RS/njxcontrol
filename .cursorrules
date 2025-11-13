@@ -1,0 +1,101 @@
+rules:
+  - id: commit-language
+    description: 'Force commit messages to be in English with emojis, following Conventional Commits'
+    match: 'commit'
+    instruction: |
+      Generate commit messages in English using the Conventional Commits specification.
+      Always follow this format:
+      <type>: <emoji> <short description in English>
+
+      Use the following mapping of type → emoji:
+      - feat: ✨ or 🚀 or 🎉
+      - fix: 🐛 or 🔥
+      - docs: 📝 or 📖
+      - style: 🎨 or 💄
+      - refactor: 🔥 or 🔄 or 🚧
+      - perf: 🚀 or ⚡️
+      - test: ✅ or 🧪
+      - build: 📦 or 🔨
+      - ci: 🤖 or 🤖️
+      - chore: 🏗️ or 🚧
+      - revert: ⏪ or ↩️
+
+      Examples:
+      feat: ✨ add user login functionality
+      fix: 🐛 handle expired tokens properly
+      docs: 📝 update API usage instructions
+      style: 🎨 reformat code for consistency
+      refactor: ♻️ simplify order processing logic
+      perf: ⚡ improve query performance
+      test: ✅ add unit tests for checkout flow
+      build: 📦 configure webpack for production
+      ci: 🤖 add GitHub Actions workflow
+      chore: 🔧 update dependencies
+
+  - id: database-migrations
+    description: 'Enforce proper database migration workflow using Supabase CLI'
+    match: 'database|migration|schema|sql|supabase'
+    instruction: |
+      For ANY database changes, ALWAYS follow this mandatory process:
+
+      1. CREATE MIGRATION:
+         - Run: supabase migration new descriptive_name
+         - Use descriptive names like: add_column_user_avatar, create_table_notifications, update_playa_status_enum
+
+      2. WRITE SQL:
+         - Edit the generated migration file in supabase/migrations/
+         - Include descriptive comments in the SQL
+         - Test the SQL logic before applying
+
+      3. APPLY MIGRATION:
+         - Run: supabase db push
+         - Verify with: supabase migration list
+
+      NEVER:
+      - Make changes directly in Supabase web console
+      - Execute SQL directly in database without migration
+      - Modify database schema without creating migration file
+
+      ALWAYS:
+      - Create migration file first
+      - Write SQL in migration file
+      - Apply via supabase db push
+      - Keep local and remote synchronized
+
+      This ensures:
+      - Complete change history and traceability
+      - Ability to rollback changes if needed
+      - Synchronization between code and database
+      - Proper deployment workflow
+
+      Current baseline: 20250907142308_baseline_empty.sql
+
+  - id: no-auto-commit-push
+    description: 'Never automatically commit or push changes without explicit user request'
+    match: 'commit|push|git'
+    instruction: |
+      NEVER automatically commit changes or push to remote repositories unless explicitly requested by the user.
+
+      FORBIDDEN ACTIONS:
+      - Do NOT run 'git commit' without explicit user instruction
+      - Do NOT run 'git push' without explicit user instruction
+      - Do NOT stage and commit files automatically
+      - Do NOT push changes to any branch automatically
+
+      ALLOWED ACTIONS:
+      - Propose commit messages when user explicitly asks to commit
+      - Show git status when requested
+      - Create branches or switch between them when asked
+      - Stage files (git add) only when explicitly requested
+
+      REQUIRED BEHAVIOR:
+      - Always wait for explicit user confirmation before committing
+      - Always wait for explicit user confirmation before pushing
+      - If the user asks to "save changes", ask them to clarify if they want to commit
+      - Treat commits and pushes as critical operations requiring explicit consent
+
+      This ensures:
+      - User maintains full control over git history
+      - No accidental commits or pushes
+      - User reviews all changes before they are committed
+      - Safe collaboration workflow

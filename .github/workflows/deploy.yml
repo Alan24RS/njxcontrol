@@ -1,0 +1,157 @@
+name: Deploy to Vercel
+
+on:
+  push:
+    branches: [develop, main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref == 'refs/heads/main' && 'Production' || 'Preview' }}
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      GITHUB_REF: ${{ github.ref }}
+      GITHUB_ACTIONS: true
+      CI: true
+
+    steps:
+      - name: 📦 Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🔧 Configure Git identity for Vercel
+        run: |
+          git config user.name "Nico Segurado"
+          git config user.email "nicosegurado735@gmail.com"
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: 📦 Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: 🔧 Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: 🔧 Install Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: 🔍 Verify environment variables
+        run: |
+          echo "🔍 Checking environment variables..."
+          echo "NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-'NOT SET'}"
+          echo "SUPABASE_DB_PASSWORD: ${SUPABASE_DB_PASSWORD:-'NOT SET'}"
+          if [ -z "$NEXT_PUBLIC_SUPABASE_URL" ] || [ -z "$SUPABASE_DB_PASSWORD" ]; then
+            echo "❌ Required Supabase environment variables are not set"
+            exit 1
+          fi
+          echo "✅ Environment variables are properly set"
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+
+      - name: 🔍 Detect deployment type and migrations
+        run: |
+          echo "🔍 Analyzing deployment..."
+          echo "Branch: ${{ github.ref }}"
+          echo "Target: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}"
+
+          # Check for migration files
+          MIGRATION_FILES=$(find supabase/migrations -name "*.sql" -newer .github/workflows/deploy.yml 2>/dev/null || echo "")
+          if [ -n "$MIGRATION_FILES" ]; then
+            echo "📋 Migration files detected:"
+            echo "$MIGRATION_FILES"
+          else
+            echo "✅ No new migration files found"
+          fi
+
+      - name: ⬇️ Pull Vercel environment information
+        run: vercel pull --yes --environment=${{ github.ref == 'refs/heads/main' && 'production' || 'preview' }} --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: 🏗️ Build project artifacts
+        run: vercel build ${{ github.ref == 'refs/heads/main' && '--prod' || '' }} --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: 🔧 Create temporary commit for Vercel authorization
+        run: |
+          git commit --allow-empty -m "temp: deployment commit" --author="Nico Segurado <nicosegurado735@gmail.com>"
+
+      - name: 🚀 Deploy prebuilt project to Vercel
+        run: vercel deploy --prebuilt ${{ github.ref == 'refs/heads/main' && '--prod' || '' }} --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: 🔧 Clean up temporary commit
+        run: |
+          git reset --hard HEAD~1
+
+      - name: 🔍 Check for new migrations
+        id: migration-check
+        run: |
+          MIGRATION_FILES=$(find supabase/migrations -name "*.sql" -newer .github/workflows/deploy.yml 2>/dev/null || echo "")
+          if [ -n "$MIGRATION_FILES" ]; then
+            echo "has-migrations=true" >> $GITHUB_OUTPUT
+            echo "📋 Migration files detected:"
+            echo "$MIGRATION_FILES"
+          else
+            echo "has-migrations=false" >> $GITHUB_OUTPUT
+            echo "✅ No new migration files found"
+          fi
+
+      - name: 🎯 Determine deployment target
+        id: deployment-type
+        run: |
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "target=production" >> $GITHUB_OUTPUT
+            echo "environment=production" >> $GITHUB_OUTPUT
+          else
+            echo "target=preview" >> $GITHUB_OUTPUT
+            echo "environment=preview" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 🔍 Validate migration order
+        if: steps.migration-check.outputs.has-migrations == 'true'
+        run: |
+          echo "🔍 Validating migration timestamps..."
+          bash scripts/validate-migration-order.sh || {
+            echo ""
+            echo "⚠️  Migration order validation failed, but continuing with --include-all flag"
+            echo "   This will apply all migrations regardless of timestamp order"
+            echo ""
+          }
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+        continue-on-error: true
+
+      - name: 🗄️ Run database migrations
+        if: steps.migration-check.outputs.has-migrations == 'true'
+        run: |
+          echo "🚀 Running database migrations..."
+          echo "Target: ${{ steps.deployment-type.outputs.target }}"
+
+          # Set Supabase environment variables
+          export SUPABASE_URL="$NEXT_PUBLIC_SUPABASE_URL"
+          export SUPABASE_DB_PASSWORD="$SUPABASE_DB_PASSWORD"
+
+          # Link to the remote project
+          supabase link --project-ref $(echo $NEXT_PUBLIC_SUPABASE_URL | sed 's/.*\/\/\([^.]*\).*/\1/')
+
+          # Run migrations with --include-all to handle out-of-order migrations
+          echo "📋 Applying migrations (including out-of-order)..."
+          supabase db push --include-all
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+
+      - name: 🔄 Revalidate Vercel cache
+        if: steps.migration-check.outputs.has-migrations == 'true'
+        run: |
+          echo "🔄 Revalidating Vercel cache after migrations..."
+          curl -X POST "https://api.vercel.com/v1/integrations/deploy/${{ secrets.VERCEL_PROJECT_ID }}/${{ secrets.VERCEL_TOKEN }}"

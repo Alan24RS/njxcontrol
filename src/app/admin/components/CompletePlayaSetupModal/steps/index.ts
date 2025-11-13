@@ -1,0 +1,6 @@
+export { default as MetodosPagoStep } from './MetodosPagoStep'
+export { default as PlayaStep } from './PlayaStep'
+export { default as PlazasStep } from './PlazasStep'
+export { default as SummaryStep } from './SummaryStep'
+export { default as TarifasStep } from './TarifasStep'
+export { default as TiposPlazaStep } from './TiposPlazaStep'

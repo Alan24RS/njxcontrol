@@ -1,0 +1,265 @@
+---
+description: Enforce proper database migration workflow using Supabase CLI
+globs: ['**/*.sql', 'supabase/**/*', 'src/services/**/*', 'src/schemas/**/*']
+alwaysApply: true
+---
+
+# Database Migration Workflow
+
+For ANY database changes, ALWAYS follow this mandatory process:
+
+## 1. CREATE MIGRATION:
+
+- Run: `supabase migration new descriptive_name`
+- Use descriptive names like: `add_column_user_avatar`, `create_table_notifications`, `update_playa_status_enum`
+
+## 2. WRITE SQL:
+
+- Edit the generated migration file in `supabase/migrations/`
+- Include descriptive comments in the SQL
+- **Make migrations idempotent** (safe to run multiple times)
+- Test the SQL logic before applying
+
+## 3. APPLY MIGRATION:
+
+- Run: `supabase db push`
+- Verify with: `supabase migration list`
+
+## NEVER:
+
+- Make changes directly in Supabase web console
+- Execute SQL directly in database without migration
+- Modify database schema without creating migration file
+
+## ALWAYS:
+
+- Create migration file first
+- Write SQL in migration file
+- Apply via `supabase db push`
+- Keep local and remote synchronized
+- **Enable RLS on new tables**: `ALTER TABLE table_name ENABLE ROW LEVEL SECURITY;`
+- **Add appropriate RLS policies** for data access control based on user roles and ownership
+
+## Benefits:
+
+- Complete change history and traceability
+- Ability to rollback changes if needed
+- Synchronization between code and database
+- Proper deployment workflow
+
+## ROW LEVEL SECURITY (RLS):
+
+### MANDATORY for all new tables:
+
+1. **Enable RLS**: `ALTER TABLE table_name ENABLE ROW LEVEL SECURITY;`
+
+2. **Create appropriate policies** based on data ownership and user roles:
+
+#### Common Policy Patterns:
+
+**Owner-based access (users see only their own data):**
+
+```sql
+CREATE POLICY "users_own_data" ON table_name
+    FOR ALL TO authenticated
+    USING (user_id = auth.uid())
+    WITH CHECK (user_id = auth.uid());
+```
+
+**Role-based access (admins see all, users see filtered):**
+
+```sql
+CREATE POLICY "admin_full_access" ON table_name
+    FOR ALL TO authenticated
+    USING (
+        EXISTS (
+            SELECT 1 FROM rol_usuario
+            WHERE usuario_id = auth.uid()
+            AND rol = 'ADMIN'
+        )
+    );
+
+CREATE POLICY "user_filtered_access" ON table_name
+    FOR SELECT TO authenticated
+    USING (
+        -- Custom filtering logic based on user context
+        owner_id = auth.uid()
+    );
+```
+
+**Relationship-based access (like playero_playa):**
+
+```sql
+CREATE POLICY "relationship_access" ON table_name
+    FOR ALL TO authenticated
+    USING (
+        inviter_id = auth.uid() OR target_user_id = auth.uid()
+    );
+```
+
+### Security Best Practices:
+
+- **Never leave tables without RLS** in production
+- **Test policies thoroughly** with different user contexts
+- **Use separate policies** for different operations (SELECT, INSERT, UPDATE, DELETE)
+- **Document policy logic** with clear comments
+- **Review policies** during code reviews
+
+## IDEMPOTENCY (CRITICAL):
+
+All migrations MUST be idempotent (safe to run multiple times without errors).
+
+### Creating Tables:
+
+```sql
+CREATE TABLE IF NOT EXISTS table_name (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL
+);
+```
+
+### Adding Columns:
+
+```sql
+DO $$
+BEGIN
+  ALTER TABLE table_name
+    ADD COLUMN new_column TEXT NOT NULL DEFAULT 'value';
+EXCEPTION
+  WHEN duplicate_column THEN
+    NULL;
+END $$;
+```
+
+### Creating Indexes:
+
+```sql
+CREATE INDEX IF NOT EXISTS idx_name ON table_name(column_name);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_name
+  ON table_name(column_name);
+```
+
+### Creating/Updating Views:
+
+**When adding columns (safe):**
+
+```sql
+CREATE OR REPLACE VIEW view_name AS
+  SELECT column1, column2, new_column3
+  FROM table_name;
+```
+
+**When removing/changing columns (requires drop):**
+
+```sql
+DROP VIEW IF EXISTS view_name;
+
+CREATE VIEW view_name AS
+  SELECT column1, column2
+  FROM table_name;
+```
+
+### Creating Enums:
+
+```sql
+DO $$
+BEGIN
+  CREATE TYPE enum_name AS ENUM ('VALUE1', 'VALUE2');
+EXCEPTION
+  WHEN duplicate_object THEN
+    NULL;
+END $$;
+```
+
+### Creating Policies:
+
+```sql
+DO $$
+BEGIN
+  CREATE POLICY "policy_name" ON table_name
+    FOR ALL TO authenticated
+    USING (user_id = auth.uid());
+EXCEPTION
+  WHEN duplicate_object THEN
+    NULL;
+END $$;
+```
+
+### Creating/Updating Functions:
+
+**⚠️ CRITICAL: PostgreSQL does NOT allow changing function return types with CREATE OR REPLACE**
+
+When modifying a function's return type, signature, or parameters, you MUST drop it first:
+
+```sql
+-- ❌ WRONG: This will fail if return type changes
+CREATE OR REPLACE FUNCTION function_name(param1 text)
+RETURNS uuid AS $$
+BEGIN
+  RETURN gen_random_uuid();
+END;
+$$ LANGUAGE plpgsql;
+
+-- ✅ CORRECT: Drop first, then create
+DO $$
+BEGIN
+  DROP FUNCTION IF EXISTS public.function_name(text);
+END $$;
+
+CREATE OR REPLACE FUNCTION public.function_name(param1 text)
+RETURNS uuid AS $$
+BEGIN
+  RETURN gen_random_uuid();
+END;
+$$ LANGUAGE plpgsql;
+```
+
+**When to use DROP FUNCTION:**
+
+- ✅ Changing return type (e.g., `RETURNS uuid` → `RETURNS json`)
+- ✅ Changing parameter types (e.g., `text` → `uuid`)
+- ✅ Adding/removing parameters (when function already exists)
+- ✅ Changing function signature in any way
+
+**When CREATE OR REPLACE is safe:**
+
+- ✅ Only changing function body logic (same signature)
+- ✅ Creating a new function (doesn't exist yet)
+
+**Example: Function that changes return type:**
+
+```sql
+-- Migration 1: Creates function returning uuid
+CREATE OR REPLACE FUNCTION get_user_id(email text)
+RETURNS uuid AS $$
+BEGIN
+  RETURN (SELECT usuario_id FROM usuario WHERE email = $1);
+END;
+$$ LANGUAGE plpgsql;
+
+-- Migration 2: Changes return type to json (MUST DROP FIRST)
+DO $$
+BEGIN
+  DROP FUNCTION IF EXISTS public.get_user_id(text);
+END $$;
+
+CREATE OR REPLACE FUNCTION public.get_user_id(email text)
+RETURNS json AS $$
+BEGIN
+  RETURN json_build_object(
+    'usuario_id', (SELECT usuario_id FROM usuario WHERE email = $1),
+    'email', email
+  );
+END;
+$$ LANGUAGE plpgsql;
+```
+
+### Why Idempotency Matters:
+
+- Migrations can be safely re-run during troubleshooting
+- Prevents errors when syncing migration history
+- Allows multiple environments to converge to same state
+- Critical for CI/CD and deployment automation
+
+**Current baseline:** 20250907142308_baseline_empty.sql

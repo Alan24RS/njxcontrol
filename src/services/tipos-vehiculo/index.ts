@@ -1,0 +1,5 @@
+export * from './createTipoVehiculoPlaya'
+export * from './getTiposVehiculo'
+export * from './transformers'
+export * from './types'
+export * from './updateTipoVehiculoEstado'

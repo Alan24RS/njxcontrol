@@ -1,0 +1,222 @@
+---
+description: Common database issues and solutions for Valet project
+globs: ['scripts/**/*', 'supabase/**/*']
+alwaysApply: false
+---
+
+# Database Troubleshooting Guide
+
+## Common Issues
+
+### 1. Orphaned Users Issue
+
+**Problem:** Users exist in `public.usuario` but not in `auth.users`, causing "Database error creating new user" when trying to recreate them.
+
+**Symptoms:**
+- Seed script fails with "Database error creating new user"
+- Users can't be created even though they don't appear in auth admin
+- Error happens after running `delete-auth-users.ts`
+
+**Root Cause:**
+The `delete-auth-users.ts` script deletes users from `auth.users` but doesn't clean up related records in:
+- `public.usuario`
+- `public.rol_usuario`
+- `public.playero_playa`
+- `public.playa` (where user is dueno)
+
+This creates **orphaned records** that prevent new users with the same email from being created.
+
+**Solution:**
+Run the cleanup script before seeding:
+
+```bash
+node --env-file=.env.local --import tsx scripts/cleanup-orphaned-users.ts
+```
+
+**Prevention:**
+The `reset-local-db.sh` script now automatically runs cleanup after deleting auth users:
+
+```bash
+# Order of operations (remote DB):
+1. Delete all auth users (delete-auth-users.ts)
+2. Clean up orphaned users (cleanup-orphaned-users.ts) ← NEW STEP
+3. Apply migrations (supabase db push)
+4. Seed database (db-seed.ts)
+```
+
+**How to Detect Orphaned Users:**
+
+```sql
+-- Find orphaned users in public.usuario
+SELECT 
+  u.usuario_id,
+  u.email,
+  CASE 
+    WHEN au.id IS NULL THEN 'ORPHANED'
+    WHEN au.id != u.usuario_id THEN 'ID MISMATCH'
+    ELSE 'OK'
+  END as status
+FROM public.usuario u
+LEFT JOIN auth.users au ON au.id = u.usuario_id
+WHERE au.id IS NULL OR au.id != u.usuario_id;
+```
+
+### 2. Database Reset Best Practices
+
+**For Remote (Production) Database:**
+
+Always use the automated script:
+
+```bash
+pnpm db:reset
+```
+
+This ensures proper cleanup order and prevents orphaned records.
+
+**Never:**
+- Delete users manually from Supabase dashboard without cleaning public tables
+- Run migrations before cleaning orphaned users
+- Skip the cleanup step
+
+### 3. User Creation Trigger Issues
+
+The `handle_new_user()` trigger runs when a user is created in `auth.users`. It:
+
+1. Creates a record in `public.usuario`
+2. Assigns role in `public.rol_usuario`
+3. Processes invitations (for playeros)
+
+**Common Trigger Failures:**
+
+- **Invalid role:** User metadata must contain `role` or `rol` as "dueno" or "playero"
+- **Missing email:** All users must have an email
+- **Duplicate email:** An orphaned user with the same email exists in public.usuario
+
+**Debugging Trigger Issues:**
+
+Check Postgres logs for trigger errors:
+
+```bash
+# View recent auth/postgres logs
+supabase functions logs
+```
+
+Look for messages like:
+- `"Error creando usuario en public.usuario"`
+- `"Error asignando rol"`
+- `"Usuario huérfano encontrado"`
+
+### 4. RLS Policy Issues
+
+If operations fail with "permission denied" or "access denied":
+
+1. Check if user has proper role assigned in `rol_usuario`
+2. Verify RLS policies allow the operation
+3. Check if user is authenticated
+
+**Common RLS Issues:**
+
+- User not in `rol_usuario` table
+- RLS policy missing for operation type (SELECT/INSERT/UPDATE/DELETE)
+- Using wrong user context (admin vs regular user)
+
+## Scripts Reference
+
+### cleanup-orphaned-users.ts
+Removes users from public tables that don't exist in auth.users.
+
+**When to use:** After deleting auth users but before seeding.
+
+### delete-auth-users.ts
+Deletes all users from auth.users.
+
+**Note:** Does NOT clean public tables - run cleanup script after this.
+
+### db-seed.ts
+Seeds the database with test data.
+
+**Requirements:** 
+- No orphaned users
+- Migrations applied
+- Empty or clean database state
+
+## Migration Best Practices
+
+1. **Always test migrations locally first**
+2. **Make migrations idempotent** (safe to run multiple times)
+3. **Include rollback plan** in migration comments
+4. **Test with existing data** before production
+5. **Migrations should ONLY modify structure** (tables, functions, triggers, policies)
+   - Do NOT insert data in migrations (use seed scripts instead)
+   - Exception: Hotfix migrations that clean up obsolete data to allow structure changes
+
+### Data vs Structure
+
+**✅ Migrations (Structure):**
+- CREATE/ALTER/DROP tables
+- CREATE/ALTER/DROP functions
+- CREATE/ALTER/DROP triggers
+- CREATE/ALTER/DROP policies
+- CREATE/ALTER/DROP views
+- CREATE/ALTER/DROP indexes
+- CREATE/ALTER/DROP constraints
+- ALTER TYPE (enum changes)
+
+**❌ NOT in Migrations (Data):**
+- INSERT INTO (except within function definitions)
+- Initial data loading
+- Test data
+- Configuration data
+- DELETE FROM (except hotfix migrations cleaning up for structure changes)
+
+**✅ Seed Scripts (Data):**
+- Test users
+- Test playas/plazas
+- Initial configuration (características, ciudades)
+- Development data
+
+### Verified Clean State After Reset
+
+After running `pnpm db:reset`, the database should contain:
+
+**auth.users:** 6 test users only
+**public tables:** Only seed data:
+- `caracteristica`: 6 records (from base seed)
+- `ciudad`: 2 records (Corrientes, Resistencia)
+- `usuario`, `rol_usuario`: 6 test users with roles
+- `playa`: 4 test playas
+- `tipo_plaza`: 12 types
+- `plaza`: 32 plazas
+- `tarifa`: 20 rates
+- `playero_playa`: 7 relations
+- `modalidad_ocupacion_playa`: 10 modalities
+- `metodo_pago_playa`: 10 payment methods
+- `tipo_vehiculo_playa`: 10 vehicle types
+- All operational tables empty: `ocupacion`, `turno`, `playero_invitacion`, `abonado`, `abono`, `vehiculo`, `boleta`, `pago`
+
+**Structure only:** All tables, functions, triggers, policies, views, indexes from migrations.
+
+## Monitoring Health
+
+Check for orphaned users periodically:
+
+```bash
+node --env-file=.env.local --import tsx scripts/cleanup-orphaned-users.ts
+```
+
+If it finds orphaned users, investigate why they weren't cleaned up properly.
+
+### Verify Clean State
+
+```sql
+-- Quick verification query
+SELECT 
+  'auth.users' as tabla, COUNT(*) as registros, '6' as esperado FROM auth.users
+UNION ALL
+SELECT 'caracteristica', COUNT(*), '6' FROM public.caracteristica
+UNION ALL
+SELECT 'ocupacion', COUNT(*), '0' FROM public.ocupacion
+ORDER BY tabla;
+```
+
+All counts should match expected values after reset.

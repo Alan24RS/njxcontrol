@@ -1,0 +1,8 @@
+# Normaliza texto a LF en el repositorio
+* text=auto eol=lf
+
+# Si tenés archivos que sí necesitan CRLF (por ejemplo .bat)
+*.bat text eol=crlf
+
+# Asegura LF en scripts shell (evita errores en bash)
+*.sh text eol=lf

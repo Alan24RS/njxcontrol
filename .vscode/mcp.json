@@ -1,0 +1,11 @@
+{
+  "servers": {
+    "shadcn": {
+      "url": "https://www.shadcn.io/api/mcp"
+    },
+    "supabase": {
+      "type": "http",
+      "url": "http://localhost:54321/mcp?read_only=true"
+    }
+  }
+}

@@ -1,0 +1,97 @@
+#!/bin/bash
+
+set -e
+
+# Check if we're in CI environment
+if [ "$CI" = "true" ] || [ "$GITHUB_ACTIONS" = "true" ] || [ "$VERCEL" = "1" ]; then
+    echo "🤖 CI environment detected. Using environment variables directly."
+    
+    # Validate required environment variables
+    if [ -z "$NEXT_PUBLIC_SUPABASE_URL" ]; then
+        echo "❌ Error: NEXT_PUBLIC_SUPABASE_URL not set in CI environment"
+        exit 1
+    fi
+    
+    if [ -z "$SUPABASE_DB_PASSWORD" ]; then
+        echo "❌ Error: SUPABASE_DB_PASSWORD not set in CI environment"
+        echo "   Configure it in Vercel environment variables or GitHub secrets"
+        exit 1
+    fi
+else
+    # Local development - use .env.local file
+    if [ ! -f .env.local ]; then
+        echo "❌ Error: .env.local file not found."
+        echo "   Create it from .env.example and configure your Supabase settings."
+        exit 1
+    fi
+    
+    source .env.local
+fi
+
+if [[ "$NEXT_PUBLIC_SUPABASE_URL" =~ (127\.0\.0\.1|localhost) ]]; then
+    DB_ENV="local (Docker)"
+    IS_LOCAL=true
+elif [[ "$NEXT_PUBLIC_SUPABASE_URL" =~ \.supabase\.co ]]; then
+    DB_ENV="remote (Supabase Cloud)"
+    IS_LOCAL=false
+else
+    echo "❌ Error: Cannot determine database environment from NEXT_PUBLIC_SUPABASE_URL"
+    echo "   Current value: $NEXT_PUBLIC_SUPABASE_URL"
+    exit 1
+fi
+
+echo "🚀 Starting database migration..."
+echo "   Environment: $DB_ENV"
+echo "   URL: $NEXT_PUBLIC_SUPABASE_URL"
+echo ""
+
+if [ "$IS_LOCAL" = true ]; then
+    echo "🔄 Pushing migrations to local database..."
+    supabase db push
+else
+    PROJECT_REF=$(echo "$NEXT_PUBLIC_SUPABASE_URL" | sed -E 's|https://([^.]+)\.supabase\.co.*|\1|')
+    
+    if [ -z "$SUPABASE_DB_PASSWORD" ]; then
+        echo "❌ Error: SUPABASE_DB_PASSWORD not set in .env.local"
+        echo "   Find it in: Supabase Dashboard → Settings → Database"
+        exit 1
+    fi
+    
+    echo "📌 Project ref: $PROJECT_REF"
+    echo "📦 Linking to Supabase project..."
+    supabase link --project-ref "$PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
+    
+    echo ""
+    echo "🔍 Enforcing Git as single source of truth for migrations..."
+    echo "   Policy: Any migration not in code (git) will be discarded."
+    echo ""
+    
+    MIGRATION_LIST_OUTPUT=$(supabase migration list 2>&1)
+    ORPHAN_MIGRATIONS=$(echo "$MIGRATION_LIST_OUTPUT" | grep "Remote" | grep -oE '[0-9]{14}' | tr '\n' ' ' || true)
+    
+    if [ -n "$ORPHAN_MIGRATIONS" ]; then
+        echo "🧹 Found migrations in database NOT present in code:"
+        for migration in $ORPHAN_MIGRATIONS; do
+            echo "   ❌ $migration (applied directly to DB, not in git)"
+        done
+        echo ""
+        echo "   These migrations will be marked as 'reverted' to maintain consistency."
+        echo "   Reason: All changes must be tracked in git via migration files."
+        echo ""
+        
+        supabase migration repair --status reverted $ORPHAN_MIGRATIONS
+        
+        echo "✅ Migration history cleaned. Git is now the source of truth."
+        echo ""
+    else
+        echo "✅ All migrations in sync between code and database."
+        echo ""
+    fi
+    
+    echo "🔄 Pushing migrations to remote database..."
+    supabase db push --linked --include-all
+fi
+
+echo ""
+echo "✅ Migrations completed successfully!"
+

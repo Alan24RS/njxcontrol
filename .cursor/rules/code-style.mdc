@@ -1,0 +1,30 @@
+---
+description: Project-specific code style and conventions for Valet
+globs: ['src/**/*.ts', 'src/**/*.tsx', 'src/**/*.js', 'src/**/*.jsx']
+alwaysApply: false
+---
+
+# Valet Project Conventions
+
+## Component Preferences:
+
+- Keep components as Server Components by default in Next.js
+- Only convert to Client Components when interactivity is necessary
+- Use `'use client'` directive only when required
+
+## Form Handling:
+
+- Prefer react-hook-form and Zod for form validation
+- Handle onSubmit in the same component file, not in separate action files
+- Use existing dependencies rather than installing new libraries
+
+## Package Management:
+
+- Use pnpm as the package manager
+- Run lint commands with `pnpm lint`
+- Check for errors with `pnpm lint` before committing
+
+## Database:
+
+- Always use existing database, never create new ones
+- Request environment variables from project admin when needed

@@ -1,0 +1,9 @@
+---
+alwaysApply: true
+---
+
+Avoid writing comments in the generated code.  
+Do not include any inline or block comments in completions.  
+Always use variable and function names in English.  
+Prefer concise, idiomatic JavaScript or TypeScript expressions.  
+Avoid explanatory text in code unless strictly necessary.

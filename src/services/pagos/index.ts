@@ -1,0 +1,1 @@
+export { updateMetodoPagoOcupacion } from './updateMetodoPago'
