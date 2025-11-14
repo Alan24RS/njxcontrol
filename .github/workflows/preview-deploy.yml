@@ -15,153 +15,49 @@ jobs:
     name: Branch naming
     runs-on: ubuntu-latest
     steps:
-      - name: Verificar que el nombre de la rama siga las convenciones (feature/, fix/, etc.)
+      - name: Verificar nombre de rama
         run: |
           BRANCH_NAME="${{ github.head_ref }}"
           TARGET_BRANCH="${{ github.base_ref }}"
-
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "Validando: $BRANCH_NAME → $TARGET_BRANCH"
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo ""
-
-          # Validar formato de nombre de rama
           if [[ ! $BRANCH_NAME =~ ^(feature|fix|hotfix|release|backport|docs|refactor|test|ci|chore)/.+ ]]; then
             echo "❌ ERROR: El nombre de la rama NO sigue las convenciones del proyecto"
-            echo ""
-            echo "┌─────────────────────────────────────────────────────────────────┐"
-            echo "│ FORMATO REQUERIDO: <tipo>/<descripción>                        │"
-            echo "└─────────────────────────────────────────────────────────────────┘"
-            echo ""
-            echo "Tipos válidos y sus usos:"
-            echo "  - feature/    → Nueva funcionalidad"
-            echo "  - fix/        → Corrección de bugs en develop"
-            echo "  - hotfix/     → Fix crítico en producción (va a main)"
-            echo "  - release/    → Preparación de release (va a main)"
-            echo "  - backport/   → Backport de cambios desde main"
-            echo "  - docs/       → Solo cambios de documentación"
-            echo "  - refactor/   → Refactorización de código"
-            echo "  - test/       → Adición de tests"
-            echo "  - ci/         → Cambios en CI/CD"
-            echo "  - chore/      → Tareas de mantenimiento"
-            echo ""
-            echo "┌─────────────────────────────────────────────────────────────────┐"
-            echo "│ EJEMPLO: feature/agregar-autenticacion-usuarios                │"
-            echo "└─────────────────────────────────────────────────────────────────┘"
-            echo ""
-            echo "Cómo renombrar tu rama:"
-            echo "   git branch -m <tipo>/$BRANCH_NAME"
-            echo "   git push origin -d $BRANCH_NAME"
-            echo "   git push origin <tipo>/$BRANCH_NAME"
-            echo ""
-            echo "Ver: CONTRIBUTING.md para más información"
-            echo ""
             exit 1
           fi
-
-          # Extraer el tipo de rama
           BRANCH_TYPE=$(echo $BRANCH_NAME | cut -d'/' -f1)
-
-          # Validar que el tipo de rama sea apropiado para el destino
           if [[ "$TARGET_BRANCH" == "main" ]]; then
             if [[ ! "$BRANCH_TYPE" =~ ^(hotfix|release|backport)$ ]]; then
-              echo "❌ ERROR: Solo branches 'hotfix/*', 'release/*' y 'backport/*' pueden ir a 'main'"
-              echo ""
-              echo "┌─────────────────────────────────────────────────────────────────┐"
-              echo "│ Tu branch: $BRANCH_NAME"
-              echo "│ Tipo detectado: $BRANCH_TYPE"
-              echo "│ Destino del PR: $TARGET_BRANCH"
-              echo "└─────────────────────────────────────────────────────────────────┘"
-              echo ""
-              echo "Soluciones:"
-              echo "   1. Cambia el destino del PR a 'develop' (para desarrollo normal)"
-              echo "   2. O renombra tu rama a 'hotfix/*' (para fixes urgentes en prod)"
-              echo "   3. O renombra tu rama a 'release/*' (para preparar un release)"
-              echo "   4. O renombra tu rama a 'backport/*' (para backport de cambios)"
-              echo ""
-              echo "Ver: CONTRIBUTING.md sección 'Flujo de Trabajo'"
-              echo ""
+              echo "❌ ERROR: Solo 'hotfix/*', 'release/*' o 'backport/*' pueden ir a 'main'"
               exit 1
             fi
-          elif [[ "$TARGET_BRANCH" == "develop" ]]; then
-            if [[ "$BRANCH_TYPE" =~ ^(hotfix|release)$ ]]; then
-              echo "⚠️  ADVERTENCIA: Branch tipo '$BRANCH_TYPE' normalmente va a 'main'"
-              echo ""
-              echo "Si estás haciendo un backport desde main, considera renombrar:"
-              echo "   git branch -m backport/$(echo $BRANCH_NAME | cut -d'/' -f2-)"
-              echo ""
-              echo "Si es intencional, este check pasará de todos modos."
-              echo ""
-            elif [[ "$BRANCH_TYPE" == "backport" ]]; then
-              echo "✓ Branch de backport detectado - apropiado para develop"
-              echo ""
-            fi
           fi
-
           echo "Validación exitosa: $BRANCH_NAME → $TARGET_BRANCH"
-          echo ""
 
   code-quality:
     name: Code quality
     runs-on: ubuntu-latest
     needs: [validate-branch]
     steps:
-      - name: Descargar código del repositorio
+      - name: Checkout code
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
-
-      - name: Configurar pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Configurar Node.js 20
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'pnpm'
-
-      - name: Instalar dependencias
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+      - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
-      - name: Verificar reglas de ESLint (linting)
-        run: |
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "Ejecutando ESLint..."
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo ""
-          pnpm lint
-          echo ""
-          echo "No se encontraron problemas de linting"
-          echo ""
-          echo "Si falla: Ejecuta 'pnpm lint' localmente para ver los errores"
-          echo ""
-
-      - name: Verificar formato de código (Prettier)
-        run: |
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "Verificando formato con Prettier..."
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo ""
-          pnpm format:check
-          echo ""
-          echo "El código está correctamente formateado"
-          echo ""
-          echo "Si falla: Ejecuta 'pnpm format' para arreglar el formato automáticamente"
-          echo ""
-
-      - name: Verificar tipos de TypeScript
-        run: |
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "Verificando tipos de TypeScript..."
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo ""
-          pnpm typecheck
-          echo ""
-          echo "No se encontraron errores de tipos"
-          echo ""
-          echo "Si falla: Ejecuta 'pnpm typecheck' localmente para ver los errores de tipos"
-          echo ""
+      - name: ESLint
+        run: pnpm lint
+      - name: Prettier
+        run: pnpm format:check
+      - name: TypeScript
+        run: pnpm typecheck
 
   preview-deploy:
     name: Preview deploy
@@ -173,139 +69,106 @@ jobs:
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
     steps:
-      - name: 📦 Checkout code
+      - name: Checkout code
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
 
-      - name: 🟢 Setup Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: 📦 Setup pnpm
+      - name: Setup pnpm
         uses: pnpm/action-setup@v4
 
-      - name: 🔧 Install Vercel CLI
+      - name: Install Vercel CLI
         run: npm install --global vercel@latest
 
-      - name: 🔍 Detect database changes
+      - name: Detect database changes
         id: detect-changes
         run: |
-          echo "🔍 Analyzing PR for database changes..."
-
-          # Get the base commit (target branch)
           BASE_COMMIT="${{ github.event.pull_request.base.sha }}"
           HEAD_COMMIT="${{ github.event.pull_request.head.sha }}"
-
-          echo "Base commit: $BASE_COMMIT"
-          echo "Head commit: $HEAD_COMMIT"
-
-          # Check for new migration files
           MIGRATION_FILES=$(git diff --name-only $BASE_COMMIT..$HEAD_COMMIT | grep "supabase/migrations/.*\.sql$" || echo "")
-
           if [ -n "$MIGRATION_FILES" ]; then
-            echo "📋 Found new migrations:"
-            echo "$MIGRATION_FILES"
             echo "has_migrations=true" >> $GITHUB_OUTPUT
             echo "migration_files<<EOF" >> $GITHUB_OUTPUT
             echo "$MIGRATION_FILES" >> $GITHUB_OUTPUT
             echo "EOF" >> $GITHUB_OUTPUT
           else
-            echo "✅ No new migrations found"
             echo "has_migrations=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: 🗄️ Note about database migrations
+      - name: Note about migrations
         if: steps.detect-changes.outputs.has_migrations == 'true'
         id: handle-migrations
         run: |
-          echo "📋 Database migrations detected in this PR"
-          echo "ℹ️ Preview will use the current staging database state"
-          echo "⚠️ Migrations will be applied when merging to develop/main"
-          echo ""
           echo "Migration files found:"
           echo "${{ steps.detect-changes.outputs.migration_files }}"
-          echo ""
-          echo "migration_status=detected" >> $GITHUB_OUTPUT
 
-      - name: ⬇️ Pull Vercel environment information
-        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+      - name: Clean previous Vercel config
+        run: rm -rf .vercel
 
-      - name: 🏗️ Build project artifacts
-        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
+      - name: Pull Vercel environment
+        run: |
+          vercel pull --yes \
+            --environment preview \
+            --token ${{ secrets.VERCEL_TOKEN }} \
+            --org-id ${{ secrets.VERCEL_ORG_ID }} \
+            --project-id ${{ secrets.VERCEL_PROJECT_ID }}
 
-      - name: 🚀 Deploy preview to Vercel
+      - name: Build project artifacts
+        run: |
+          vercel build \
+            --token ${{ secrets.VERCEL_TOKEN }} \
+            --org-id ${{ secrets.VERCEL_ORG_ID }} \
+            --project-id ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Deploy preview to Vercel
         id: deploy
         run: |
-          # Configure Git to use your identity
           git config user.name "Muñoz Nahuel Alan"
           git config user.email "alan.n.m_21@hotmail.com"
-
-          # Create a temporary commit with your identity for Vercel
-          git commit --allow-empty -m "temp: deployment commit" --author="Nico Segurado <nicosegurado735@gmail.com>"
-
-          # Deploy with your identity
-          DEPLOYMENT_URL=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})
+          git commit --allow-empty -m "temp: deployment commit" --author="Muñoz Nahuel Alan <alan.n.m_21@hotmail.com>"
+          DEPLOYMENT_URL=$(vercel deploy --prebuilt \
+            --token ${{ secrets.VERCEL_TOKEN }} \
+            --org-id ${{ secrets.VERCEL_ORG_ID }} \
+            --project-id ${{ secrets.VERCEL_PROJECT_ID }} \
+            --confirm)
           echo "deployment_url=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
-          echo "🚀 Preview deployed to: $DEPLOYMENT_URL"
-
-          # Clean up the temporary commit
           git reset --hard HEAD~1
 
-      - name: 💬 Comment deployment URL on PR
+      - name: Comment deployment URL on PR
         uses: actions/github-script@v7
         with:
           script: |
             const prNumber = context.payload.pull_request.number;
-
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: prNumber,
             });
-
-            const botComment = comments.find(comment => 
-              comment.user.type === 'Bot' && 
+            const botComment = comments.find(comment =>
+              comment.user.type === 'Bot' &&
               comment.body.includes('🚀 Preview Deployment')
             );
-
             const hasMigrations = '${{ steps.detect-changes.outputs.has_migrations }}' === 'true';
-
-            let statusIcon = '✅';
-            let statusText = 'Deployed successfully';
-            let migrationInfo = '';
-
-            if (hasMigrations) {
-              statusIcon = '⚠️';
-              statusText = 'Deployed (with pending migrations)';
-              migrationInfo = '**Database:** 🗄️ Using current staging database. Migrations will be applied on merge.';
-            } else {
-              migrationInfo = '**Database:** ✅ No migrations detected';
-            }
-
+            let statusIcon = hasMigrations ? '⚠️' : '✅';
+            let statusText = hasMigrations ? 'Deployed (with pending migrations)' : 'Deployed successfully';
+            let migrationInfo = hasMigrations ?
+              '**Database:** 🗄️ Using current staging database. Migrations will be applied on merge.' :
+              '**Database:** ✅ No migrations detected';
             const commentBody = `## ${statusIcon} Preview Deployment
-              
-              **Status:** ${statusText}
-              
-              **Preview URL:** [${{ steps.deploy.outputs.deployment_url }}](${{ steps.deploy.outputs.deployment_url }})
-              
-              ${migrationInfo}
-              
-              ${hasMigrations ? `
-              **⚠️ Pending Migration Files:**
-              \`\`\`
-              ${{ steps.detect-changes.outputs.migration_files }}
-              \`\`\`
-              
-              > **Note:** This preview uses the current staging database. Database migrations will be automatically applied when this PR is merged to develop/main.
-              ` : ''}
-              
-              ---
-              
-              The preview will be automatically updated when you push new commits to this PR.`;
 
+**Status:** ${statusText}
+
+**Preview URL:** [${{ steps.deploy.outputs.deployment_url }}](${{ steps.deploy.outputs.deployment_url }})
+
+${migrationInfo}
+
+The preview will be automatically updated when you push new commits to this PR.`;
             if (botComment) {
               await github.rest.issues.updateComment({
                 owner: context.repo.owner,
