@@ -1,4 +1,4 @@
-name: Deploy to Vercel
+name: Deploy to Vercel + Supabase
 
 on:
   push:
@@ -45,6 +45,11 @@ jobs:
         with:
           version: latest
 
+      - name: 🔧 Setup Vercel project locally
+        run: |
+          mkdir -p .vercel
+          echo '{"projectId":"'"${{ secrets.VERCEL_PROJECT_ID }}"'","orgId":"'"${{ secrets.VERCEL_ORG_ID }}"'"}' > .vercel/project.json
+
       - name: 🔍 Verify environment variables
         run: |
           echo "🔍 Checking environment variables..."
@@ -56,15 +61,13 @@ jobs:
           fi
           echo "✅ Environment variables are properly set"
 
-      - name: 🔍 Detect deployment target
+      - name: 🔍 Determine deployment target
         id: deployment
         run: |
           if [ "${GITHUB_REF}" = "refs/heads/main" ]; then
             echo "target=production" >> $GITHUB_OUTPUT
-            echo "environment=production" >> $GITHUB_OUTPUT
           else
             echo "target=preview" >> $GITHUB_OUTPUT
-            echo "environment=preview" >> $GITHUB_OUTPUT
           fi
 
       - name: 🔍 Check for new migrations
