@@ -36,6 +36,9 @@ jobs:
       - name: 📦 Setup pnpm
         uses: pnpm/action-setup@v4
 
+      - name: 🧹 Clean up old Vercel config
+        run: rm -rf .vercel
+
       - name: 🔧 Install Vercel CLI
         run: npm install --global vercel@latest
 
