@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🚗 njx
+  <h1 style="color: pink; margin: 0;">🔥🚘N.J.X. Control🚘🔥</h1>
 
 ### Plataforma Integral de Gestión de Estacionamientos Urbanos
 
@@ -31,7 +31,7 @@
 
 ---
 
-## ✨ Características
+## 🧪 Características
 
 <table>
 <tr>
