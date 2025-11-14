@@ -24,6 +24,14 @@ Get-Content ".env.local" | ForEach-Object {
 # Determine database environment
 $supabaseUrl = $env:NEXT_PUBLIC_SUPABASE_URL
 
+# Validate Supabase URL format early to avoid seeding errors later
+if (-not ($supabaseUrl -match '^https?://')) {
+    Write-Host "Error: NEXT_PUBLIC_SUPABASE_URL must start with http:// or https://" -ForegroundColor Red
+    Write-Host "   Current value: $supabaseUrl"
+    Write-Host "   Example local value: http://localhost:54321"
+    exit 1
+}
+
 if ($supabaseUrl -match '(127\.0\.0\.1|localhost)') {
     $dbEnv = "local (Docker)"
     $warnMsg = "WARNING: This will RESET your LOCAL database."
@@ -77,6 +85,11 @@ Write-Host ""
 if ($isLocal) {
     Write-Host "Resetting local database..." -ForegroundColor Cyan
     supabase db reset
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "Local database reset failed. Ensure Docker Desktop is installed and running." -ForegroundColor Red
+        Write-Host "Download: https://docs.docker.com/desktop" -ForegroundColor Yellow
+        exit 1
+    }
 }
 else {
     Write-Host "Deleting all auth users..." -ForegroundColor Cyan
@@ -110,6 +123,11 @@ else {
 Write-Host ""
 Write-Host "Seeding database..." -ForegroundColor Cyan
 node --env-file=.env.local --import tsx scripts/db-seed.ts
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Seeding failed. See errors above." -ForegroundColor Red
+    exit 1
+}
 
 Write-Host ""
 Write-Host "Database reset complete!" -ForegroundColor Green
