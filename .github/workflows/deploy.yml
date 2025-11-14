@@ -45,11 +45,6 @@ jobs:
         with:
           version: latest
 
-      - name: 🔧 Setup Vercel project locally
-        run: |
-          mkdir -p .vercel
-          echo '{"projectId":"'"${{ secrets.VERCEL_PROJECT_ID }}"'","orgId":"'"${{ secrets.VERCEL_ORG_ID }}"'"}' > .vercel/project.json
-
       - name: 🔍 Verify environment variables
         run: |
           echo "🔍 Checking environment variables..."
@@ -82,13 +77,13 @@ jobs:
             echo "✅ No new migration files found"
           fi
 
-      - name: 🏗️ Build project artifacts
+      - name: 🚀 Deploy project to Vercel
         run: |
-          vercel build ${{ steps.deployment.outputs.target == 'production' && '--prod' || '' }} --token=${{ secrets.VERCEL_TOKEN }}
-
-      - name: 🚀 Deploy prebuilt project to Vercel
-        run: |
-          vercel deploy --prebuilt ${{ steps.deployment.outputs.target == 'production' && '--prod' || '' }} --token=${{ secrets.VERCEL_TOKEN }}
+          vercel deploy \
+            ${{ steps.deployment.outputs.target == 'production' && '--prod' || '' }} \
+            --token=${{ secrets.VERCEL_TOKEN }} \
+            --confirm
+        # Si falla, workflow falla automáticamente
 
       - name: 🔄 Apply Supabase migrations (optional)
         if: steps.migration-check.outputs.has-migrations == 'true'
