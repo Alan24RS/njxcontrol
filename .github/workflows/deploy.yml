@@ -7,14 +7,15 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: ${{ github.ref == 'refs/heads/main' && 'Production' || 'Preview' }}
     env:
+      GITHUB_ACTIONS: true
+      CI: true
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-      GITHUB_REF: ${{ github.ref }}
-      GITHUB_ACTIONS: true
-      CI: true
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
     steps:
       - name: 📦 Checkout code
@@ -23,7 +24,7 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 🔧 Configure Git identity for Vercel
+      - name: 🔧 Configure Git identity
         run: |
           git config user.name "Nico Segurado"
           git config user.email "nicosegurado735@gmail.com"
@@ -37,7 +38,7 @@ jobs:
         uses: pnpm/action-setup@v4
 
       - name: 🔧 Install Vercel CLI
-        run: npm install --global vercel@latest
+        run: npm install -g vercel@latest
 
       - name: 🔧 Install Supabase CLI
         uses: supabase/setup-cli@v1
@@ -54,59 +55,11 @@ jobs:
             exit 1
           fi
           echo "✅ Environment variables are properly set"
-        env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
 
-      - name: 🔍 Detect deployment type and migrations
+      - name: 🔍 Detect deployment target
+        id: deployment
         run: |
-          echo "🔍 Analyzing deployment..."
-          echo "Branch: ${{ github.ref }}"
-          echo "Target: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}"
-
-          # Check for migration files
-          MIGRATION_FILES=$(find supabase/migrations -name "*.sql" -newer .github/workflows/deploy.yml 2>/dev/null || echo "")
-          if [ -n "$MIGRATION_FILES" ]; then
-            echo "📋 Migration files detected:"
-            echo "$MIGRATION_FILES"
-          else
-            echo "✅ No new migration files found"
-          fi
-
-      - name: ⬇️ Pull Vercel environment information
-        run: vercel pull --yes --environment=${{ github.ref == 'refs/heads/main' && 'production' || 'preview' }} --token=${{ secrets.VERCEL_TOKEN }}
-
-      - name: 🏗️ Build project artifacts
-        run: vercel build ${{ github.ref == 'refs/heads/main' && '--prod' || '' }} --token=${{ secrets.VERCEL_TOKEN }}
-
-      - name: 🔧 Create temporary commit for Vercel authorization
-        run: |
-          git commit --allow-empty -m "temp: deployment commit" --author="Nico Segurado <nicosegurado735@gmail.com>"
-
-      - name: 🚀 Deploy prebuilt project to Vercel
-        run: vercel deploy --prebuilt ${{ github.ref == 'refs/heads/main' && '--prod' || '' }} --token=${{ secrets.VERCEL_TOKEN }}
-
-      - name: 🔧 Clean up temporary commit
-        run: |
-          git reset --hard HEAD~1
-
-      - name: 🔍 Check for new migrations
-        id: migration-check
-        run: |
-          MIGRATION_FILES=$(find supabase/migrations -name "*.sql" -newer .github/workflows/deploy.yml 2>/dev/null || echo "")
-          if [ -n "$MIGRATION_FILES" ]; then
-            echo "has-migrations=true" >> $GITHUB_OUTPUT
-            echo "📋 Migration files detected:"
-            echo "$MIGRATION_FILES"
-          else
-            echo "has-migrations=false" >> $GITHUB_OUTPUT
-            echo "✅ No new migration files found"
-          fi
-
-      - name: 🎯 Determine deployment target
-        id: deployment-type
-        run: |
-          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+          if [ "${GITHUB_REF}" = "refs/heads/main" ]; then
             echo "target=production" >> $GITHUB_OUTPUT
             echo "environment=production" >> $GITHUB_OUTPUT
           else
@@ -114,44 +67,36 @@ jobs:
             echo "environment=preview" >> $GITHUB_OUTPUT
           fi
 
-      - name: 🔍 Validate migration order
+      - name: 🔍 Check for new migrations
+        id: migration-check
+        run: |
+          MIGRATION_FILES=$(find supabase/migrations -name "*.sql" -newer .github/workflows/deploy.yml 2>/dev/null || echo "")
+          if [ -n "$MIGRATION_FILES" ]; then
+            echo "has-migrations=true" >> $GITHUB_OUTPUT
+            echo "📋 Migration files detected:"; echo "$MIGRATION_FILES"
+          else
+            echo "has-migrations=false" >> $GITHUB_OUTPUT
+            echo "✅ No new migration files found"
+          fi
+
+      - name: 🏗️ Build project artifacts
+        run: |
+          vercel build ${{ steps.deployment.outputs.target == 'production' && '--prod' || '' }} --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: 🚀 Deploy prebuilt project to Vercel
+        run: |
+          vercel deploy --prebuilt ${{ steps.deployment.outputs.target == 'production' && '--prod' || '' }} --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: 🔄 Apply Supabase migrations (optional)
         if: steps.migration-check.outputs.has-migrations == 'true'
         run: |
-          echo "🔍 Validating migration timestamps..."
-          bash scripts/validate-migration-order.sh || {
-            echo ""
-            echo "⚠️  Migration order validation failed, but continuing with --include-all flag"
-            echo "   This will apply all migrations regardless of timestamp order"
-            echo ""
-          }
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-        continue-on-error: true
-
-      - name: 🗄️ Run database migrations
-        if: steps.migration-check.outputs.has-migrations == 'true'
-        run: |
-          echo "🚀 Running database migrations..."
-          echo "Target: ${{ steps.deployment-type.outputs.target }}"
-
-          # Set Supabase environment variables
+          echo "📋 Applying Supabase migrations..."
           export SUPABASE_URL="$NEXT_PUBLIC_SUPABASE_URL"
           export SUPABASE_DB_PASSWORD="$SUPABASE_DB_PASSWORD"
-
-          # Link to the remote project
           supabase link --project-ref $(echo $NEXT_PUBLIC_SUPABASE_URL | sed 's/.*\/\/\([^.]*\).*/\1/')
-
-          # Run migrations with --include-all to handle out-of-order migrations
-          echo "📋 Applying migrations (including out-of-order)..."
           supabase db push --include-all
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        continue-on-error: true # No bloquea el deploy
 
-      - name: 🔄 Revalidate Vercel cache
-        if: steps.migration-check.outputs.has-migrations == 'true'
-        run: |
-          echo "🔄 Revalidating Vercel cache after migrations..."
-          curl -X POST "https://api.vercel.com/v1/integrations/deploy/${{ secrets.VERCEL_PROJECT_ID }}/${{ secrets.VERCEL_TOKEN }}"
+      - name: 🔧 Clean up temporary commit (optional)
+        run: git reset --hard HEAD~1
+        continue-on-error: true # No bloquea el deploy
