@@ -1,4 +1,4 @@
-name: Bot
+name: NJX-Bot
 
 on:
   pull_request_target:
@@ -240,8 +240,8 @@ jobs:
         id: deploy
         run: |
           # Configure Git to use your identity
-          git config user.name "Nico Segurado"
-          git config user.email "nicosegurado735@gmail.com"
+          git config user.name "Muñoz Nahuel Alan"
+          git config user.email "alan.n.m_21@hotmail.com"
 
           # Create a temporary commit with your identity for Vercel
           git commit --allow-empty -m "temp: deployment commit" --author="Nico Segurado <nicosegurado735@gmail.com>"
