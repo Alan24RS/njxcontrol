@@ -15,9 +15,10 @@ export default function ToolbarContainer({
   const { selectedPlaya, isLoading: playaLoading } = useSelectedPlaya()
 
   const queryParams = {
-    playaId: selectedPlaya?.id || '',
+    playaId: params.playa || selectedPlaya?.id || '',
     fromDate: params.fromDate,
-    toDate: params.toDate
+    toDate: params.toDate,
+    includeFilters: true
   }
 
   const { data: response, isLoading: isLoadingTurnos } = useGetTurnos(

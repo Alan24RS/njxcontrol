@@ -18,7 +18,9 @@ export function extractAppliedFilters(
     'query',
     'includeFilters',
     'select',
-    'playaId' // ID de la playa no es un filtro, es un parámetro obligatorio
+    'playaId', // ID de la playa no es un filtro, es un parámetro obligatorio
+    'fromDate', // Fechas se manejan por separado en el componente de filtros
+    'toDate' // Fechas se manejan por separado en el componente de filtros
   ])
 
   // Iterar sobre todos los parámetros

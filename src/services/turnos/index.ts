@@ -1,6 +1,7 @@
 export * from './deleteTurno'
 export * from './getRecaudacionTurno'
 export * from './getTurno'
+export * from './getTurnoFilters'
 export * from './getTurnos'
 export * from './iniciarTurno'
 export * from './types'

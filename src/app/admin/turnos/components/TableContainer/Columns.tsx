@@ -43,6 +43,29 @@ const getHref = (row: Turno) => {
 export function getColumns(now: Date = new Date()): ColumnDef<Turno>[] {
   return [
     {
+      accessorKey: 'playaNombre',
+      id: 'playa',
+      meta: 'Playa',
+      header: () =>
+        SortHeader({
+          children: 'Playa',
+          id: 'playa',
+          type: 'string',
+          className: 'justify-start'
+        }),
+      cell: ({ row }) => {
+        const nombre = row.original.playaNombre
+        const direccion = row.original.playaDireccion
+        return (
+          <CellLink href={getHref(row.original)} className="justify-start">
+            <p className="text-left text-sm">
+              {nombre || direccion || 'Sin nombre'}
+            </p>
+          </CellLink>
+        )
+      }
+    },
+    {
       accessorKey: 'fechaHoraIngreso',
       id: 'fecha_hora_ingreso',
       meta: 'Ingreso',

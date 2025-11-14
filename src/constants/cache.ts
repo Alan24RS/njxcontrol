@@ -8,7 +8,8 @@ export const CACHE_TAGS = {
   TIPOS_PLAZA: 'tipos-plaza',
   TIPOS_VEHICULO: 'tipos-vehiculo',
   TARIFAS: 'tarifas',
-  PLAZAS: 'plazas'
+  PLAZAS: 'plazas',
+  TURNOS: 'turnos'
 } as const
 
 export const CACHE_TIMES = {
@@ -22,5 +23,6 @@ export const CACHE_TIMES = {
   TIPOS_VEHICULO: 3600, // 1 hora - configuración muy estable
   TARIFAS: 300, // 5 minutos - precios que pueden cambiar
   PLAZAS: 180, // 3 minutos - disponibilidad que cambia frecuentemente
+  TURNOS: 180, // 3 minutos - turnos activos que cambian con frecuencia
   USER_AUTH: 60 // 1 minuto - datos de usuario/sesión
 } as const

@@ -12,6 +12,7 @@ import { formatParams } from '@/utils/queryParams'
 
 export type PageParams = PaginationParams & {
   playaId?: string
+  playa?: string | string[]
   fromDate?: string
   toDate?: string
 }

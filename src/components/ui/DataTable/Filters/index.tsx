@@ -27,6 +27,7 @@ import { getFiltersApplied } from '@/utils/filtersUtils'
 const filterStrategies = {
   estado: FilterCheckbox,
   playero: FilterCheckbox,
+  playa: FilterCheckbox,
   tipoPlaza: FilterCheckbox,
   ciudad: FilterCheckbox,
   caracteristicas: FilterCheckbox,

@@ -23,4 +23,6 @@ export interface Turno {
   fechaHoraSalida?: Date
   efectivoInicial: number
   efectivoFinal?: number
+  playaNombre?: string
+  playaDireccion?: string
 }

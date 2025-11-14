@@ -7,9 +7,10 @@ import type { Turno } from '@/services/turnos/types'
 import type { ApiResponse } from '@/types/api'
 
 interface GetTurnosParams {
-  playaId?: string
+  playaId?: string | string[]
   fromDate?: string
   toDate?: string
+  includeFilters?: boolean
 }
 
 export function useGetTurnos(
