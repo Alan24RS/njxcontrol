@@ -1,4 +1,4 @@
-name: NicoBot
+name: Bot
 
 on:
   pull_request_target:
