@@ -3,7 +3,7 @@ name: NicoBot
 on:
   pull_request_target:
     types: [opened, synchronize, reopened]
-    branches: [develop, main]
+    branches: [main]
 
 permissions:
   contents: read
@@ -18,10 +18,9 @@ jobs:
       - name: Verificar que el nombre de la rama siga las convenciones (feature/, fix/, etc.)
         run: |
           BRANCH_NAME="${{ github.head_ref }}"
-          TARGET_BRANCH="${{ github.base_ref }}"
 
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "Validando: $BRANCH_NAME → $TARGET_BRANCH"
+          echo "Validando nombre de rama: $BRANCH_NAME"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo ""
 
@@ -35,10 +34,10 @@ jobs:
             echo ""
             echo "Tipos válidos y sus usos:"
             echo "  - feature/    → Nueva funcionalidad"
-            echo "  - fix/        → Corrección de bugs en develop"
-            echo "  - hotfix/     → Fix crítico en producción (va a main)"
-            echo "  - release/    → Preparación de release (va a main)"
-            echo "  - backport/   → Backport de cambios desde main"
+            echo "  - fix/        → Corrección de bugs"
+            echo "  - hotfix/     → Fix crítico en producción"
+            echo "  - release/    → Preparación de release"
+            echo "  - backport/   → Backport de cambios"
             echo "  - docs/       → Solo cambios de documentación"
             echo "  - refactor/   → Refactorización de código"
             echo "  - test/       → Adición de tests"
@@ -59,46 +58,7 @@ jobs:
             exit 1
           fi
 
-          # Extraer el tipo de rama
-          BRANCH_TYPE=$(echo $BRANCH_NAME | cut -d'/' -f1)
-
-          # Validar que el tipo de rama sea apropiado para el destino
-          if [[ "$TARGET_BRANCH" == "main" ]]; then
-            if [[ ! "$BRANCH_TYPE" =~ ^(hotfix|release|backport)$ ]]; then
-              echo "❌ ERROR: Solo branches 'hotfix/*', 'release/*' y 'backport/*' pueden ir a 'main'"
-              echo ""
-              echo "┌─────────────────────────────────────────────────────────────────┐"
-              echo "│ Tu branch: $BRANCH_NAME"
-              echo "│ Tipo detectado: $BRANCH_TYPE"
-              echo "│ Destino del PR: $TARGET_BRANCH"
-              echo "└─────────────────────────────────────────────────────────────────┘"
-              echo ""
-              echo "Soluciones:"
-              echo "   1. Cambia el destino del PR a 'develop' (para desarrollo normal)"
-              echo "   2. O renombra tu rama a 'hotfix/*' (para fixes urgentes en prod)"
-              echo "   3. O renombra tu rama a 'release/*' (para preparar un release)"
-              echo "   4. O renombra tu rama a 'backport/*' (para backport de cambios)"
-              echo ""
-              echo "Ver: CONTRIBUTING.md sección 'Flujo de Trabajo'"
-              echo ""
-              exit 1
-            fi
-          elif [[ "$TARGET_BRANCH" == "develop" ]]; then
-            if [[ "$BRANCH_TYPE" =~ ^(hotfix|release)$ ]]; then
-              echo "⚠️  ADVERTENCIA: Branch tipo '$BRANCH_TYPE' normalmente va a 'main'"
-              echo ""
-              echo "Si estás haciendo un backport desde main, considera renombrar:"
-              echo "   git branch -m backport/$(echo $BRANCH_NAME | cut -d'/' -f2-)"
-              echo ""
-              echo "Si es intencional, este check pasará de todos modos."
-              echo ""
-            elif [[ "$BRANCH_TYPE" == "backport" ]]; then
-              echo "✓ Branch de backport detectado - apropiado para develop"
-              echo ""
-            fi
-          fi
-
-          echo "Validación exitosa: $BRANCH_NAME → $TARGET_BRANCH"
+          echo "Validación exitosa: $BRANCH_NAME"
           echo ""
 
   code-quality:
@@ -223,7 +183,7 @@ jobs:
         run: |
           echo "📋 Database migrations detected in this PR"
           echo "ℹ️ Preview will use the current staging database state"
-          echo "⚠️ Migrations will be applied when merging to develop/main"
+          echo "⚠️ Migrations will be applied when merging to main"
           echo ""
           echo "Migration files found:"
           echo "${{ steps.detect-changes.outputs.migration_files }}"
@@ -299,7 +259,7 @@ jobs:
               ${{ steps.detect-changes.outputs.migration_files }}
               \`\`\`
               
-              > **Note:** This preview uses the current staging database. Database migrations will be automatically applied when this PR is merged to develop/main.
+              > **Note:** This preview uses the current staging database. Database migrations will be automatically applied when this PR is merged to main.
               ` : ''}
               
               ---
