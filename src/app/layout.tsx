@@ -16,9 +16,9 @@ import { generateSyncMetadata } from '@/utils/metadata'
 import './globals.css'
 
 export const metadata = generateSyncMetadata({
-  title: 'Valet',
+  title: 'NJXControl',
   description:
-    'Valet es una plataforma de gestión de playas de estacionamiento',
+    'NJXControl es una plataforma de gestión de playas de estacionamiento',
   pageRoute: '/'
 })
 
@@ -31,7 +31,7 @@ export default function RootLayout({
     <ViewTransitions>
       <html lang="es" suppressHydrationWarning>
         <head>
-          <meta name="apple-mobile-web-app-title" content="Valet" />
+          <meta name="apple-mobile-web-app-title" content="NJXControl" />
         </head>
         <body
           className={cn(
