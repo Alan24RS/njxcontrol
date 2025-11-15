@@ -1,9 +1,9 @@
-name: NicoBot
+name: NJXBot
 
 on:
   pull_request_target:
     types: [opened, synchronize, reopened]
-    branches: [develop, main]
+    branches: [main]
 
 permissions:
   contents: read
@@ -18,13 +18,10 @@ jobs:
       - name: Verificar que el nombre de la rama siga las convenciones (feature/, fix/, etc.)
         run: |
           BRANCH_NAME="${{ github.head_ref }}"
-          TARGET_BRANCH="${{ github.base_ref }}"
-
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "Validando: $BRANCH_NAME → $TARGET_BRANCH"
+          echo "Validando nombre de rama: $BRANCH_NAME"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo ""
-
           # Validar formato de nombre de rama
           if [[ ! $BRANCH_NAME =~ ^(feature|fix|hotfix|release|backport|docs|refactor|test|ci|chore)/.+ ]]; then
             echo "❌ ERROR: El nombre de la rama NO sigue las convenciones del proyecto"
@@ -35,10 +32,10 @@ jobs:
             echo ""
             echo "Tipos válidos y sus usos:"
             echo "  - feature/    → Nueva funcionalidad"
-            echo "  - fix/        → Corrección de bugs en develop"
-            echo "  - hotfix/     → Fix crítico en producción (va a main)"
-            echo "  - release/    → Preparación de release (va a main)"
-            echo "  - backport/   → Backport de cambios desde main"
+            echo "  - fix/        → Corrección de bugs"
+            echo "  - hotfix/     → Fix crítico en producción"
+            echo "  - release/    → Preparación de release"
+            echo "  - backport/   → Backport de cambios"
             echo "  - docs/       → Solo cambios de documentación"
             echo "  - refactor/   → Refactorización de código"
             echo "  - test/       → Adición de tests"
@@ -58,49 +55,8 @@ jobs:
             echo ""
             exit 1
           fi
-
-          # Extraer el tipo de rama
-          BRANCH_TYPE=$(echo $BRANCH_NAME | cut -d'/' -f1)
-
-          # Validar que el tipo de rama sea apropiado para el destino
-          if [[ "$TARGET_BRANCH" == "main" ]]; then
-            if [[ ! "$BRANCH_TYPE" =~ ^(hotfix|release|backport)$ ]]; then
-              echo "❌ ERROR: Solo branches 'hotfix/*', 'release/*' y 'backport/*' pueden ir a 'main'"
-              echo ""
-              echo "┌─────────────────────────────────────────────────────────────────┐"
-              echo "│ Tu branch: $BRANCH_NAME"
-              echo "│ Tipo detectado: $BRANCH_TYPE"
-              echo "│ Destino del PR: $TARGET_BRANCH"
-              echo "└─────────────────────────────────────────────────────────────────┘"
-              echo ""
-              echo "Soluciones:"
-              echo "   1. Cambia el destino del PR a 'develop' (para desarrollo normal)"
-              echo "   2. O renombra tu rama a 'hotfix/*' (para fixes urgentes en prod)"
-              echo "   3. O renombra tu rama a 'release/*' (para preparar un release)"
-              echo "   4. O renombra tu rama a 'backport/*' (para backport de cambios)"
-              echo ""
-              echo "Ver: CONTRIBUTING.md sección 'Flujo de Trabajo'"
-              echo ""
-              exit 1
-            fi
-          elif [[ "$TARGET_BRANCH" == "develop" ]]; then
-            if [[ "$BRANCH_TYPE" =~ ^(hotfix|release)$ ]]; then
-              echo "⚠️  ADVERTENCIA: Branch tipo '$BRANCH_TYPE' normalmente va a 'main'"
-              echo ""
-              echo "Si estás haciendo un backport desde main, considera renombrar:"
-              echo "   git branch -m backport/$(echo $BRANCH_NAME | cut -d'/' -f2-)"
-              echo ""
-              echo "Si es intencional, este check pasará de todos modos."
-              echo ""
-            elif [[ "$BRANCH_TYPE" == "backport" ]]; then
-              echo "✓ Branch de backport detectado - apropiado para develop"
-              echo ""
-            fi
-          fi
-
-          echo "Validación exitosa: $BRANCH_NAME → $TARGET_BRANCH"
+          echo "Validación exitosa: $BRANCH_NAME"
           echo ""
-
   code-quality:
     name: Code quality
     runs-on: ubuntu-latest
@@ -136,7 +92,6 @@ jobs:
           echo ""
           echo "Si falla: Ejecuta 'pnpm lint' localmente para ver los errores"
           echo ""
-
       - name: Verificar formato de código (Prettier)
         run: |
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -149,7 +104,6 @@ jobs:
           echo ""
           echo "Si falla: Ejecuta 'pnpm format' para arreglar el formato automáticamente"
           echo ""
-
       - name: Verificar tipos de TypeScript
         run: |
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -162,7 +116,6 @@ jobs:
           echo ""
           echo "Si falla: Ejecuta 'pnpm typecheck' localmente para ver los errores de tipos"
           echo ""
-
   preview-deploy:
     name: Preview deploy
     runs-on: ubuntu-latest
@@ -194,17 +147,13 @@ jobs:
         id: detect-changes
         run: |
           echo "🔍 Analyzing PR for database changes..."
-
           # Get the base commit (target branch)
           BASE_COMMIT="${{ github.event.pull_request.base.sha }}"
           HEAD_COMMIT="${{ github.event.pull_request.head.sha }}"
-
           echo "Base commit: $BASE_COMMIT"
           echo "Head commit: $HEAD_COMMIT"
-
           # Check for new migration files
           MIGRATION_FILES=$(git diff --name-only $BASE_COMMIT..$HEAD_COMMIT | grep "supabase/migrations/.*\.sql$" || echo "")
-
           if [ -n "$MIGRATION_FILES" ]; then
             echo "📋 Found new migrations:"
             echo "$MIGRATION_FILES"
@@ -216,20 +165,18 @@ jobs:
             echo "✅ No new migrations found"
             echo "has_migrations=false" >> $GITHUB_OUTPUT
           fi
-
       - name: 🗄️ Note about database migrations
         if: steps.detect-changes.outputs.has_migrations == 'true'
         id: handle-migrations
         run: |
           echo "📋 Database migrations detected in this PR"
           echo "ℹ️ Preview will use the current staging database state"
-          echo "⚠️ Migrations will be applied when merging to develop/main"
+          echo "⚠️ Migrations will be applied when merging to main"
           echo ""
           echo "Migration files found:"
           echo "${{ steps.detect-changes.outputs.migration_files }}"
           echo ""
           echo "migration_status=detected" >> $GITHUB_OUTPUT
-
       - name: ⬇️ Pull Vercel environment information
         run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
 
@@ -242,41 +189,32 @@ jobs:
           # Configure Git to use your identity
           git config user.name "Nico Segurado"
           git config user.email "nicosegurado735@gmail.com"
-
           # Create a temporary commit with your identity for Vercel
           git commit --allow-empty -m "temp: deployment commit" --author="Nico Segurado <nicosegurado735@gmail.com>"
-
           # Deploy with your identity
           DEPLOYMENT_URL=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})
           echo "deployment_url=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
           echo "🚀 Preview deployed to: $DEPLOYMENT_URL"
-
           # Clean up the temporary commit
           git reset --hard HEAD~1
-
       - name: 💬 Comment deployment URL on PR
         uses: actions/github-script@v7
         with:
           script: |
             const prNumber = context.payload.pull_request.number;
-
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: prNumber,
             });
-
             const botComment = comments.find(comment => 
               comment.user.type === 'Bot' && 
               comment.body.includes('🚀 Preview Deployment')
             );
-
             const hasMigrations = '${{ steps.detect-changes.outputs.has_migrations }}' === 'true';
-
             let statusIcon = '✅';
             let statusText = 'Deployed successfully';
             let migrationInfo = '';
-
             if (hasMigrations) {
               statusIcon = '⚠️';
               statusText = 'Deployed (with pending migrations)';
@@ -284,7 +222,6 @@ jobs:
             } else {
               migrationInfo = '**Database:** ✅ No migrations detected';
             }
-
             const commentBody = `## ${statusIcon} Preview Deployment
               
               **Status:** ${statusText}
@@ -299,13 +236,12 @@ jobs:
               ${{ steps.detect-changes.outputs.migration_files }}
               \`\`\`
               
-              > **Note:** This preview uses the current staging database. Database migrations will be automatically applied when this PR is merged to develop/main.
+              > **Note:** This preview uses the current staging database. Database migrations will be automatically applied when this PR is merged to main.
               ` : ''}
               
               ---
               
               The preview will be automatically updated when you push new commits to this PR.`;
-
             if (botComment) {
               await github.rest.issues.updateComment({
                 owner: context.repo.owner,
