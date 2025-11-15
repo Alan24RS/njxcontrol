@@ -10,10 +10,10 @@ export function Topbar() {
         <div className="flex h-16 items-center justify-between">
           <Link
             href="/"
-            className="text-foreground hover:text-primary flex items-center gap-2 text-2xl font-bold transition-colors duration-200"
+            className="text-foreground hover:text-primary flex items-center gap-1 text-3xl font-bold transition-colors duration-200"
           >
-            <Isologo className="size-6" />
-            <span className="text-2xl font-bold">Valet</span>
+            <Isologo className="size-12 rounded-lg" />
+            <span className="text-2xl leading-none font-bold">Control</span>
           </Link>
 
           <ThemeToggle />

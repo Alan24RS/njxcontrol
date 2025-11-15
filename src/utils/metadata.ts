@@ -7,8 +7,8 @@ interface PageMetadata {
 }
 
 const siteConfig = {
-  url: 'https://valet.ar',
-  siteName: 'Valet'
+  url: 'https://njxcontrol.ar',
+  siteName: 'NJXControl'
 }
 
 export const generateSyncMetadata = (args: PageMetadata): Metadata => {
