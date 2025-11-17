@@ -1,19 +1,19 @@
 'use client'
 
+import AbonosTableContainer from '@/app/admin/abonos/components/shared/AbonosTableContainer'
 import { DataTable } from '@/components/ui'
 
-import AbonosTableContainer from '../shared/AbonosTableContainer'
 import ToolbarContainer from '../ToolbarContainer'
 
 import getColumns from './Columns'
 
-export { type TableData } from '../shared/AbonosTableContainer'
+export { type TableData } from '@/app/admin/abonos/components/shared/AbonosTableContainer'
 
 export default function TableContainer() {
   const columns = getColumns()
 
   return (
-    <AbonosTableContainer filterByPlaya={false}>
+    <AbonosTableContainer filterByPlaya={true}>
       {({ abonos }) => (
         <>
           <ToolbarContainer />

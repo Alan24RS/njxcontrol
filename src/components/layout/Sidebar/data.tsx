@@ -72,14 +72,14 @@ export const playaActual: SidebarItem[] = [
   },
   {
     title: 'Abonos',
-    url: '/admin/abonos',
+    url: '/admin/abonos/playa-actual',
     icon: CalendarIcon,
     isActive: false,
     roles: [ROL.PLAYERO]
   },
   {
     title: 'Abonados',
-    url: '/admin/abonados',
+    url: '/admin/abonados/playa-actual',
     icon: UserStar,
     isActive: false,
     roles: [ROL.PLAYERO]

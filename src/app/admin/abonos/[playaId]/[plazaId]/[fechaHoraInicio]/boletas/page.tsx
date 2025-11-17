@@ -36,11 +36,11 @@ export default async function BoletasPage({ params }: BoletasPageProps) {
   return (
     <div className="container mx-auto space-y-6 py-6">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
-          <Link href="/admin/abonos">
+        <Link href="/admin/abonos">
+          <Button variant="ghost" size="icon">
             <ArrowLeft className="h-4 w-4" />
-          </Link>
-        </Button>
+          </Button>
+        </Link>
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
             Boletas del Abono
