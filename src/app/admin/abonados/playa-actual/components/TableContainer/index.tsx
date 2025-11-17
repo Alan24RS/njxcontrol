@@ -1,14 +1,13 @@
 'use client'
 
+import AbonadosTableContainer from '@/app/admin/abonados/components/shared/AbonadosTableContainer'
+import getColumns from '@/app/admin/abonados/components/TableContainer/Columns'
 import { DataTable } from '@/components/ui'
 
 import { PageParams } from '../../page'
-import AbonadosTableContainer from '../shared/AbonadosTableContainer'
 import ToolbarContainer from '../ToolbarContainer'
 
-import getColumns from './Columns'
-
-export { type TableData } from '../shared/AbonadosTableContainer'
+export { type TableData } from '@/app/admin/abonados/components/shared/AbonadosTableContainer'
 
 export default function TableContainer({
   params
@@ -18,7 +17,7 @@ export default function TableContainer({
   const columns = getColumns()
 
   return (
-    <AbonadosTableContainer params={params} filterByPlaya={false}>
+    <AbonadosTableContainer params={params} filterByPlaya={true}>
       {({ abonados, pagination }) => (
         <>
           <ToolbarContainer params={params} />

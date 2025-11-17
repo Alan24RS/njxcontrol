@@ -55,21 +55,16 @@ export default function SidebarSection({
   const searchParams = useSearchParams()
 
   const isActualPath = (url: string) => {
+    // Coincidencia exacta
     if (pathname === url) return true
 
+    // Verificar con query params
     const currentUrl =
       pathname + (searchParams.toString() ? `?${searchParams.toString()}` : '')
     if (currentUrl === url) return true
 
-    if (
-      url !== '/admin' &&
-      pathname.startsWith(url) &&
-      ((pathname.length > url.length && pathname[url.length] === '/') ||
-        pathname.length === url.length)
-    ) {
-      return true
-    }
-
+    // No marcar rutas padre cuando estamos en rutas hijas
+    // Solo marcar si el item tiene sub-items Y estamos en uno de ellos
     return false
   }
 

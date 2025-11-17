@@ -27,6 +27,7 @@ export type RawAbonoVigente = {
 
 export type AbonoVigente = {
   playaId: string
+  playaNombre: string
   plazaId: string
   fechaHoraInicio: Date
   precioMensual: number
