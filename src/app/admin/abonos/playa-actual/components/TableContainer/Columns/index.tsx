@@ -18,7 +18,6 @@ type TableDataType = TableData['data'][number]
 export const labels = {
   abonado: 'Abonado',
   dni: 'DNI',
-  playa: 'Playa',
   plaza: 'Plaza',
   tipoPlaza: 'Tipo Plaza',
   vehiculos: 'Vehículos',
@@ -52,18 +51,6 @@ export default function getColumns(): ColumnDef<TableDataType>[] {
       cell: ({ row }) => (
         <CellLink href={getHref(row.original)} className="justify-center">
           {row.original.abonadoDni}
-        </CellLink>
-      )
-    },
-    {
-      accessorKey: 'playa',
-      id: 'playa',
-      meta: labels.playa,
-      enableHiding: true,
-      header: () => <SimpleHeader>{labels.playa}</SimpleHeader>,
-      cell: ({ row }) => (
-        <CellLink href={getHref(row.original)} className="justify-start">
-          {row.original.playaNombre}
         </CellLink>
       )
     },

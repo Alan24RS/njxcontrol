@@ -9,6 +9,11 @@ const runtimeEnv =
 const nextConfig: NextConfig = {
   env: {
     NEXT_PUBLIC_RUNTIME_ENVIRONMENT: runtimeEnv
+  },
+  // Optimizaciones para filesystems lentos (OneDrive)
+  experimental: {
+    // Reduce el número de archivos generados
+    optimizePackageImports: ['lucide-react', '@radix-ui/react-icons']
   }
 }
 

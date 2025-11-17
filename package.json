@@ -28,6 +28,8 @@
     "branch:validate": "bash scripts/validate-branch.sh",
     "branch:validate:main": "bash scripts/validate-branch.sh main",
     "assets:icons": "node --import tsx scripts/generate-icons.ts"
+    "optimize:onedrive": "powershell -ExecutionPolicy Bypass -File scripts/optimize-onedrive.ps1",
+    "optimize:defender": "powershell -ExecutionPolicy Bypass -File scripts/add-defender-exclusions.ps1"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.1",

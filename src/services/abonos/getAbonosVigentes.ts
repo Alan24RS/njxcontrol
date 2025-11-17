@@ -16,6 +16,7 @@ export async function getAbonosVigentes(playaId?: string): Promise<{
       .select(
         `
         *,
+        playa:playa!inner(nombre),
         plaza:plaza!inner(identificador, tipo_plaza:tipo_plaza!plaza_tipo_plaza_fkey(nombre)),
         abonado:abonado!inner(nombre, apellido, dni),
         abono_vehiculo:abono_vehiculo!inner(
@@ -50,6 +51,7 @@ export async function getAbonosVigentes(playaId?: string): Promise<{
 
         return {
           playaId: abono.playa_id,
+          playaNombre: abono.playa?.nombre || 'Sin nombre',
           plazaId: abono.plaza_id,
           fechaHoraInicio: new Date(abono.fecha_hora_inicio),
           precioMensual: Number(abono.precio_mensual),
