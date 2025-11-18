@@ -1,6 +1,7 @@
 import {
   CalendarIcon,
   CarFront,
+  ChartBar,
   Clock,
   CreditCard,
   DollarSign,
@@ -24,6 +25,13 @@ export const general: SidebarItem[] = [
     icon: HomeIcon,
     isActive: false,
     roles: [ROL.DUENO, ROL.PLAYERO]
+  },
+  {
+    title: 'Reportes',
+    url: '/admin/reportes',
+    icon: ChartBar,
+    isActive: false,
+    roles: [ROL.DUENO]
   },
   {
     title: 'Playas',
