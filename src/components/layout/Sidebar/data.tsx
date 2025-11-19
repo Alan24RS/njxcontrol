@@ -31,7 +31,17 @@ export const general: SidebarItem[] = [
     url: '/admin/reportes',
     icon: ChartBar,
     isActive: false,
-    roles: [ROL.DUENO]
+    roles: [ROL.DUENO],
+    items: [
+      {
+        title: 'Abonos Vigentes',
+        url: '/admin/reportes'
+      },
+      {
+        title: 'Ocupaciones por Turno',
+        url: '/admin/reportes/ocupaciones'
+      }
+    ]
   },
   {
     title: 'Playas',
