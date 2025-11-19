@@ -35,21 +35,17 @@ export function AppSidebar({ user, playas, ...props }: AppSidebarProps) {
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
               <Link href="/admin">
-                <div>
-                  <Isologo className="size-10 rounded-lg" />
+                <div className="flex size-8 items-center justify-center">
+                  <Isologo className="size-8 rounded" />
                 </div>
-                <div className="grid flex-1 text-left leading-tight">
-                  <span className="items-center truncate align-middle leading-none font-semibold">
-                    NJ
+                <div className="grid flex-1 text-left text-sm leading-tight">
+                  <span className="truncate font-semibold">
+                    <span className="text-sidebar-foreground">NJ</span>
+                    <span className="text-sidebar-primary">X</span>
+                    <span className="text-sidebar-foreground">Control</span>
                   </span>
-                  <span className="items-center truncate align-middle leading-none font-semibold text-fuchsia-600">
-                    X
-                  </span>
-                  <span className="items-center truncate align-middle leading-none font-semibold">
-                    Control
-                  </span>
-                  <span className="truncate text-[10px] leading-none text-fuchsia-600">
-                    Panel administrativo
+                  <span className="text-muted-foreground truncate text-xs">
+                    Panel de Administración
                   </span>
                 </div>
               </Link>

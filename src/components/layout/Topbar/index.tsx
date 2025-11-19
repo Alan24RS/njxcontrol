@@ -12,7 +12,7 @@ export function Topbar() {
             href="/"
             className="text-foreground hover:text-primary flex items-center gap-1 text-3xl font-bold transition-colors duration-200"
           >
-            <Isologo className="size-12 rounded-lg" />
+            <Isologo className="size-10 rounded-md" />
             <span className="text-2xl leading-none font-bold">Control</span>
           </Link>
 
