@@ -40,6 +40,10 @@ export const general: SidebarItem[] = [
       {
         title: 'Ocupaciones por Turno',
         url: '/admin/reportes/ocupaciones'
+      },
+      {
+        title: 'Pagos Mensuales',
+        url: '/admin/reportes/pagos-mensuales'
       }
     ]
   },
@@ -85,6 +89,13 @@ export const playaActual: SidebarItem[] = [
     title: 'Ocupaciones',
     url: '/admin/ocupaciones',
     icon: ParkingCircle,
+    isActive: false,
+    roles: [ROL.PLAYERO]
+  },
+  {
+    title: 'Reportes',
+    url: '/admin/reportes/pagos-mensuales',
+    icon: ChartBar,
     isActive: false,
     roles: [ROL.PLAYERO]
   },
