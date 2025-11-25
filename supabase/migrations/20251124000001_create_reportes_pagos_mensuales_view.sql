@@ -4,28 +4,28 @@
 CREATE OR REPLACE VIEW public.reportes_pagos_mensuales AS
 WITH pagos_ocupaciones AS (
   SELECT
-    p.playa_id,
+    pago.playa_id,
     pl.nombre AS playa_nombre,
     pl.direccion AS playa_direccion,
-    pago.turno_playero_id AS playero_id,
+    pago.playero_id,
     u.nombre AS playero_nombre,
-    EXTRACT(YEAR FROM pago.fecha_pago)::INTEGER AS anio,
-    EXTRACT(MONTH FROM pago.fecha_pago)::INTEGER AS mes,
+    EXTRACT(YEAR FROM pago.fecha_hora_pago)::INTEGER AS anio,
+    EXTRACT(MONTH FROM pago.fecha_hora_pago)::INTEGER AS mes,
     pago.metodo_pago,
     SUM(pago.monto_pago) AS monto_total,
     COUNT(DISTINCT pago.pago_id) AS cantidad_pagos,
     'ocupacion' AS tipo_pago
   FROM public.pago pago
-  INNER JOIN public.ocupacion o ON pago.numero_pago = o.numero_pago AND pago.playa_id = o.playa_id
+  INNER JOIN public.ocupacion o ON pago.ocupacion_id = o.ocupacion_id
   INNER JOIN public.playa pl ON pago.playa_id = pl.playa_id
-  INNER JOIN public.usuario u ON pago.turno_playero_id = u.usuario_id
-  WHERE pago.numero_pago IS NOT NULL
-    AND pago.fecha_pago IS NOT NULL
+  INNER JOIN public.usuario u ON pago.playero_id = u.usuario_id
+  WHERE pago.ocupacion_id IS NOT NULL
+    AND pago.fecha_hora_pago IS NOT NULL
   GROUP BY
-    p.playa_id,
+    pago.playa_id,
     pl.nombre,
     pl.direccion,
-    pago.turno_playero_id,
+    pago.playero_id,
     u.nombre,
     anio,
     mes,
@@ -36,10 +36,10 @@ pagos_boletas AS (
     b.playa_id,
     pl.nombre AS playa_nombre,
     pl.direccion AS playa_direccion,
-    pago.turno_playero_id AS playero_id,
+    pago.playero_id,
     u.nombre AS playero_nombre,
-    EXTRACT(YEAR FROM pago.fecha_pago)::INTEGER AS anio,
-    EXTRACT(MONTH FROM pago.fecha_pago)::INTEGER AS mes,
+    EXTRACT(YEAR FROM pago.fecha_hora_pago)::INTEGER AS anio,
+    EXTRACT(MONTH FROM pago.fecha_hora_pago)::INTEGER AS mes,
     pago.metodo_pago,
     SUM(pago.monto_pago) AS monto_total,
     COUNT(DISTINCT pago.pago_id) AS cantidad_pagos,
@@ -47,14 +47,14 @@ pagos_boletas AS (
   FROM public.pago pago
   INNER JOIN public.boleta b ON pago.boleta_id = b.boleta_id
   INNER JOIN public.playa pl ON b.playa_id = pl.playa_id
-  INNER JOIN public.usuario u ON pago.turno_playero_id = u.usuario_id
+  INNER JOIN public.usuario u ON pago.playero_id = u.usuario_id
   WHERE pago.boleta_id IS NOT NULL
-    AND pago.fecha_pago IS NOT NULL
+    AND pago.fecha_hora_pago IS NOT NULL
   GROUP BY
     b.playa_id,
     pl.nombre,
     pl.direccion,
-    pago.turno_playero_id,
+    pago.playero_id,
     u.nombre,
     anio,
     mes,
