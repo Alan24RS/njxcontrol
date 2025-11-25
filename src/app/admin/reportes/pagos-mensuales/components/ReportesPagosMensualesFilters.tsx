@@ -59,34 +59,34 @@ export function ReportesPagosMensualesFilters({
   const searchParams = useSearchParams()
 
   const [selectedPlaya, setSelectedPlaya] = useState<string>(
-    searchParams.get('playa') || ''
+    searchParams.get('playa') || 'all'
   )
   const [selectedPlayero, setSelectedPlayero] = useState<string>(
-    searchParams.get('playero') || ''
+    searchParams.get('playero') || 'all'
   )
   const [selectedAnio, setSelectedAnio] = useState<string>(
     searchParams.get('anio') || new Date().getFullYear().toString()
   )
   const [selectedMes, setSelectedMes] = useState<string>(
-    searchParams.get('mes') || ''
+    searchParams.get('mes') || 'all'
   )
 
   const aplicarFiltros = useCallback(() => {
     const params = new URLSearchParams()
 
-    if (selectedPlaya) {
+    if (selectedPlaya && selectedPlaya !== 'all') {
       params.set('playa', selectedPlaya)
     }
 
-    if (selectedPlayero && esDueno) {
+    if (selectedPlayero && selectedPlayero !== 'all' && esDueno) {
       params.set('playero', selectedPlayero)
     }
 
-    if (selectedAnio) {
+    if (selectedAnio && selectedAnio !== 'all') {
       params.set('anio', selectedAnio)
     }
 
-    if (selectedMes) {
+    if (selectedMes && selectedMes !== 'all') {
       params.set('mes', selectedMes)
     }
 
@@ -101,10 +101,10 @@ export function ReportesPagosMensualesFilters({
   ])
 
   const limpiarFiltros = useCallback(() => {
-    setSelectedPlaya('')
-    setSelectedPlayero('')
+    setSelectedPlaya('all')
+    setSelectedPlayero('all')
     setSelectedAnio(new Date().getFullYear().toString())
-    setSelectedMes('')
+    setSelectedMes('all')
     router.push(window.location.pathname)
   }, [router])
 
@@ -127,7 +127,7 @@ export function ReportesPagosMensualesFilters({
                   <SelectValue placeholder="Todas las playas" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todas las playas</SelectItem>
+                  <SelectItem value="all">Todas las playas</SelectItem>
                   {playas.map((playa) => (
                     <SelectItem key={playa.playa_id} value={playa.playa_id}>
                       {playa.playa_nombre}
@@ -150,7 +150,7 @@ export function ReportesPagosMensualesFilters({
                   <SelectValue placeholder="Todos los playeros" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos los playeros</SelectItem>
+                  <SelectItem value="all">Todos los playeros</SelectItem>
                   {playeros.map((playero) => (
                     <SelectItem
                       key={playero.playero_id}
@@ -172,7 +172,7 @@ export function ReportesPagosMensualesFilters({
                 <SelectValue placeholder="Seleccionar año" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos los años</SelectItem>
+                <SelectItem value="all">Todos los años</SelectItem>
                 {getAnios().map((anio) => (
                   <SelectItem key={anio.value} value={anio.value}>
                     {anio.label}
@@ -190,7 +190,7 @@ export function ReportesPagosMensualesFilters({
                 <SelectValue placeholder="Todos los meses" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos los meses</SelectItem>
+                <SelectItem value="all">Todos los meses</SelectItem>
                 {MESES.map((mes) => (
                   <SelectItem key={mes.value} value={mes.value}>
                     {mes.label}
