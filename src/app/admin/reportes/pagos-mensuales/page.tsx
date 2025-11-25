@@ -4,6 +4,7 @@ import { PageContainer, PageHeader } from '@/components/layout'
 import { ROL } from '@/constants/rol'
 import { getAuthenticatedUser } from '@/lib/supabase/server'
 import { getReportePagosMensuales } from '@/services/reportes'
+import { getTurno } from '@/services/turnos'
 
 import { ReportesPagosMensualesContent } from './components/ReportesPagosMensualesContent'
 
@@ -33,12 +34,20 @@ export default async function ReportesPagosMensualesPage({
     redirect('/admin')
   }
 
+  // Si es playero, obtener su turno activo
+  let turnoActivo = null
+  if (esPlayero && !esDueno) {
+    const turnoResponse = await getTurno({ activo: true })
+    turnoActivo = turnoResponse.data
+  }
+
   const params = await searchParams
   const { data: reportes, error } = await getReportePagosMensuales(
     params.playa,
     params.playero,
     params.anio ? parseInt(params.anio) : undefined,
-    params.mes ? parseInt(params.mes) : undefined
+    params.mes ? parseInt(params.mes) : undefined,
+    turnoActivo // Pasar el turno activo para filtrar
   )
 
   return (
@@ -51,6 +60,7 @@ export default async function ReportesPagosMensualesPage({
         reportes={reportes || []}
         error={error}
         esDueno={esDueno}
+        turnoActivo={!!turnoActivo}
       />
     </PageContainer>
   )

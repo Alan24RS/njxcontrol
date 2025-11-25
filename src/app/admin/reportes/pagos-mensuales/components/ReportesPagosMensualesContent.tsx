@@ -18,12 +18,14 @@ interface ReportesPagosMensualesContentProps {
   reportes: ReportePagosMensuales[]
   error: string | null
   esDueno: boolean
+  turnoActivo?: boolean
 }
 
 export function ReportesPagosMensualesContent({
   reportes,
   error,
-  esDueno
+  esDueno,
+  turnoActivo = false
 }: ReportesPagosMensualesContentProps) {
   const [selectedReporte, setSelectedReporte] =
     useState<ReportePagosMensuales | null>(null)
@@ -81,6 +83,7 @@ export function ReportesPagosMensualesContent({
         playas={playasUnicas}
         playeros={playerosUnicos}
         esDueno={esDueno}
+        turnoActivo={turnoActivo}
       />
 
       {/* Resumen general */}
