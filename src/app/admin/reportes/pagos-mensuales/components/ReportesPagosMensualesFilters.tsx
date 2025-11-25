@@ -24,7 +24,6 @@ interface ReportesPagosMensualesFiltersProps {
   playas?: Array<{ playa_id: string; playa_nombre: string }>
   playeros?: Array<{ playero_id: string; playero_nombre: string }>
   esDueno: boolean
-  turnoActivo?: boolean
 }
 
 const MESES = [
@@ -54,8 +53,7 @@ const getAnios = () => {
 export function ReportesPagosMensualesFilters({
   playas = [],
   playeros = [],
-  esDueno,
-  turnoActivo = false
+  esDueno
 }: ReportesPagosMensualesFiltersProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -109,21 +107,6 @@ export function ReportesPagosMensualesFilters({
     setSelectedMes('all')
     router.push(window.location.pathname)
   }, [router])
-
-  // Si hay turno activo, mostrar mensaje en lugar de filtros
-  if (turnoActivo) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Vista de Turno Activo</CardTitle>
-          <CardDescription>
-            Estás viendo únicamente los pagos registrados en tu turno actual.
-            Los filtros están deshabilitados.
-          </CardDescription>
-        </CardHeader>
-      </Card>
-    )
-  }
 
   return (
     <Card>

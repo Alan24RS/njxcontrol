@@ -1,0 +1,1 @@
+export { ReporteTurnoActualContent } from './ReporteTurnoActualContent'

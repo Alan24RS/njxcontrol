@@ -94,10 +94,20 @@ export const playaActual: SidebarItem[] = [
   },
   {
     title: 'Reportes',
-    url: '/admin/reportes/pagos-mensuales',
+    url: '/admin/reportes',
     icon: ChartBar,
     isActive: false,
-    roles: [ROL.PLAYERO]
+    roles: [ROL.PLAYERO],
+    items: [
+      {
+        title: 'Turno Actual',
+        url: '/admin/reportes/turno-actual'
+      },
+      {
+        title: 'Pagos Mensuales',
+        url: '/admin/reportes/pagos-mensuales'
+      }
+    ]
   },
   {
     title: 'Abonos',
