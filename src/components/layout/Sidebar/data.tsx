@@ -1,4 +1,5 @@
 import {
+  BarChart3,
   CalendarIcon,
   CarFront,
   ChartBar,
@@ -27,12 +28,16 @@ export const general: SidebarItem[] = [
     roles: [ROL.DUENO, ROL.PLAYERO]
   },
   {
-    title: 'Reportes',
-    url: '/admin/reportes',
-    icon: ChartBar,
+    title: 'Analytics',
+    url: '/admin/analytics',
+    icon: BarChart3,
     isActive: false,
     roles: [ROL.DUENO],
     items: [
+      {
+        title: 'Informe de Recaudación',
+        url: '/admin/analytics/recaudacion'
+      },
       {
         title: 'Abonos Vigentes',
         url: '/admin/reportes'
@@ -46,6 +51,14 @@ export const general: SidebarItem[] = [
         url: '/admin/reportes/pagos-mensuales'
       }
     ]
+  },
+  {
+    title: 'Reportes',
+    url: '/admin/reportes',
+    icon: ChartBar,
+    isActive: false,
+    roles: [ROL.DUENO],
+    items: []
   },
   {
     title: 'Playas',
