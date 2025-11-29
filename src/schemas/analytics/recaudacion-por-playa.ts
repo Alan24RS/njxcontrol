@@ -8,7 +8,9 @@ export const recaudacionPorPlayaFiltersSchema = z
   .object({
     fecha_desde: z.date(),
     fecha_hasta: z.date(),
-    playa_id: z.string().uuid().optional().nullable()
+    playa_id: z.string().uuid().optional().nullable(),
+    playero_id: z.string().uuid().optional().nullable(),
+    tipo: z.enum(['ABONO', 'OCUPACION']).optional().nullable()
   })
   .refine((data) => data.fecha_desde <= data.fecha_hasta, {
     message: 'La fecha desde debe ser anterior o igual a la fecha hasta',
@@ -23,7 +25,9 @@ export const recaudacionPorPlayaFiltersServerSchema = z
   .object({
     fecha_desde: z.coerce.date(),
     fecha_hasta: z.coerce.date(),
-    playa_id: z.string().uuid().optional().nullable()
+    playa_id: z.string().uuid().optional().nullable(),
+    playero_id: z.string().uuid().optional().nullable(),
+    tipo: z.enum(['ABONO', 'OCUPACION']).optional().nullable()
   })
   .refine((data) => data.fecha_desde <= data.fecha_hasta, {
     message: 'La fecha desde debe ser anterior o igual a la fecha hasta',

@@ -354,17 +354,20 @@ async function procesarAbonos(abonos: TestAbono[]) {
       // 2. Insertar abono
       const { data: abonoData, error: errorAbono } = await supabase
         .from('abono')
-        .insert({
-          playa_id: abono.playa_id,
-          plaza_id: abono.plaza_id,
-          abonado_id: abonadoData.abonado_id,
-          fecha_hora_inicio: abono.fecha_hora_inicio.toISOString(),
-          estado: 'ACTIVO',
-          turno_creacion_playa_id: abono.turno_playa_id,
-          turno_creacion_playero_id: abono.turno_playero_id,
-          turno_creacion_fecha_hora_ingreso:
-            abono.turno_fecha_hora_ingreso.toISOString()
-        })
+        .upsert(
+          {
+            playa_id: abono.playa_id,
+            plaza_id: abono.plaza_id,
+            abonado_id: abonadoData.abonado_id,
+            fecha_hora_inicio: abono.fecha_hora_inicio.toISOString(),
+            estado: 'ACTIVO',
+            turno_creacion_playa_id: abono.turno_playa_id,
+            turno_creacion_playero_id: abono.turno_playero_id,
+            turno_creacion_fecha_hora_ingreso:
+              abono.turno_fecha_hora_ingreso.toISOString()
+          },
+          { onConflict: 'playa_id,plaza_id,fecha_hora_inicio' }
+        )
         .select()
         .single()
 
@@ -389,12 +392,15 @@ async function procesarAbonos(abonos: TestAbono[]) {
 
         const { error: errorAbonoVehiculo } = await supabase
           .from('abono_vehiculo')
-          .insert({
-            playa_id: abonoData.playa_id,
-            plaza_id: abonoData.plaza_id,
-            fecha_hora_inicio: abonoData.fecha_hora_inicio,
-            patente: vehiculo.patente
-          })
+          .upsert(
+            {
+              playa_id: abonoData.playa_id,
+              plaza_id: abonoData.plaza_id,
+              fecha_hora_inicio: abonoData.fecha_hora_inicio,
+              patente: vehiculo.patente
+            },
+            { onConflict: 'playa_id,plaza_id,fecha_hora_inicio,patente' }
+          )
 
         if (errorAbonoVehiculo) {
           console.error(
@@ -408,21 +414,27 @@ async function procesarAbonos(abonos: TestAbono[]) {
       // 4. Crear boleta inicial
       const { data: boletaData, error: errorBoleta } = await supabase
         .from('boleta')
-        .insert({
-          playa_id: abonoData.playa_id,
-          plaza_id: abonoData.plaza_id,
-          fecha_hora_inicio_abono: abonoData.fecha_hora_inicio,
-          fecha_generacion_boleta: abono.fecha_hora_inicio
-            .toISOString()
-            .split('T')[0],
-          fecha_vencimiento_boleta: new Date(
-            abono.fecha_hora_inicio.getTime() + 15 * 24 * 60 * 60 * 1000
-          )
-            .toISOString()
-            .split('T')[0],
-          monto: abono.monto_pago,
-          estado: 'PAGADA'
-        })
+        .upsert(
+          {
+            playa_id: abonoData.playa_id,
+            plaza_id: abonoData.plaza_id,
+            fecha_hora_inicio_abono: abonoData.fecha_hora_inicio,
+            fecha_generacion_boleta: abono.fecha_hora_inicio
+              .toISOString()
+              .split('T')[0],
+            fecha_vencimiento_boleta: new Date(
+              abono.fecha_hora_inicio.getTime() + 15 * 24 * 60 * 60 * 1000
+            )
+              .toISOString()
+              .split('T')[0],
+            monto: abono.monto_pago,
+            estado: 'PAGADA'
+          },
+          {
+            onConflict:
+              'playa_id,plaza_id,fecha_hora_inicio_abono,fecha_generacion_boleta'
+          }
+        )
         .select()
         .single()
 

@@ -41,6 +41,8 @@ export interface RecaudacionPorPlayaFilters {
   fecha_desde: Date
   fecha_hasta: Date
   playa_id?: string | null // null = todas las playas
+  playero_id?: string | null
+  tipo?: 'ABONO' | 'OCUPACION' | null
 }
 
 /**

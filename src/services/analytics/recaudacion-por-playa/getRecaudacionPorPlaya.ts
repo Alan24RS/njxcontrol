@@ -38,7 +38,24 @@ export async function getRecaudacionPorPlaya(
     throw new Error(`Error al obtener recaudación: ${error.message}`)
   }
 
-  if (!pagosData || pagosData.length === 0) {
+  // Filtros adicionales en memoria (playero y tipo)
+  let filteredPagos = pagosData ?? []
+
+  if (filters.playero_id) {
+    filteredPagos = filteredPagos.filter(
+      (p) => p.playero_id === filters.playero_id
+    )
+  }
+
+  if (filters.tipo) {
+    if (filters.tipo === 'ABONO') {
+      filteredPagos = filteredPagos.filter((p) => p.boleta_id !== null)
+    } else if (filters.tipo === 'OCUPACION') {
+      filteredPagos = filteredPagos.filter((p) => p.ocupacion_id !== null)
+    }
+  }
+
+  if (!filteredPagos || filteredPagos.length === 0) {
     return {
       data: [],
       dataDiaria: [],
@@ -53,7 +70,7 @@ export async function getRecaudacionPorPlaya(
   }
 
   // Obtener IDs únicos de playas
-  const playaIds = [...new Set(pagosData.map((p) => p.playa_id))]
+  const playaIds = [...new Set(filteredPagos.map((p) => p.playa_id))]
 
   // Consultar nombres de playas
   const { data: playasData, error: playasError } = await supabase
@@ -77,7 +94,7 @@ export async function getRecaudacionPorPlaya(
   // Obtener IDs únicos de playeros
   const playeroIds = [
     ...new Set(
-      pagosData
+      filteredPagos
         .map((p) => p.playero_id)
         .filter((id): id is string => typeof id === 'string' && !!id)
     )
@@ -110,7 +127,7 @@ export async function getRecaudacionPorPlaya(
   // Agrupar por día (para gráfico)
   const groupedDiario = new Map<string, RecaudacionDiariaRow>()
 
-  for (const pago of pagosData) {
+  for (const pago of filteredPagos) {
     const mes = new Date(pago.fecha_hora_pago).toISOString().slice(0, 7) + '-01'
     const fecha = new Date(pago.fecha_hora_pago).toISOString().slice(0, 10)
     const keyMensual = `${pago.playa_id}_${mes}`
@@ -186,7 +203,7 @@ export async function getRecaudacionPorPlaya(
   )
 
   // Construir detalle por pago para la tabla
-  const pagos: PagoDetalleRow[] = pagosData
+  const pagos: PagoDetalleRow[] = filteredPagos
     .map((pago) => {
       const monto = Number(pago.monto_pago)
       const esAbono = pago.boleta_id !== null

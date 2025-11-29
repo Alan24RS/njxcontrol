@@ -22,7 +22,9 @@ export function useRecaudacionPorPlaya(
       {
         fecha_desde: filters.fecha_desde.toISOString(),
         fecha_hasta: filters.fecha_hasta.toISOString(),
-        playa_id: filters.playa_id
+        playa_id: filters.playa_id,
+        playero_id: filters.playero_id ?? null,
+        tipo: filters.tipo ?? null
       }
     ],
     queryFn: async () => {
@@ -30,7 +32,9 @@ export function useRecaudacionPorPlaya(
       const payload = {
         fecha_desde: filters.fecha_desde.toISOString(),
         fecha_hasta: filters.fecha_hasta.toISOString(),
-        playa_id: filters.playa_id
+        playa_id: filters.playa_id,
+        playero_id: filters.playero_id ?? null,
+        tipo: filters.tipo ?? null
       }
       return await getRecaudacionPorPlayaAction(payload)
     },

@@ -12,9 +12,10 @@ import {
   type SortingState,
   useReactTable
 } from '@tanstack/react-table'
-import { ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react'
+import { ArrowUpDown, ChevronLeft, ChevronRight, X } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import {
   Select,
   SelectContent,
@@ -46,6 +47,29 @@ export function RecaudacionPorPlayaTable({
     pageIndex: 0,
     pageSize: 10
   })
+
+  // Filtros locales
+  const [filterPlaya, setFilterPlaya] = useState('')
+  const [filterPlayero, setFilterPlayero] = useState('')
+  const [filterTipo, setFilterTipo] = useState<'all' | 'ABONO' | 'OCUPACION'>(
+    'all'
+  )
+
+  // Aplicar filtros en memoria
+  const filteredData = useMemo(() => {
+    return data.filter((row) => {
+      const matchPlaya =
+        filterPlaya === '' ||
+        row.playa_nombre.toLowerCase().includes(filterPlaya.toLowerCase())
+      const matchPlayero =
+        filterPlayero === '' ||
+        (row.playero_nombre ?? '')
+          .toLowerCase()
+          .includes(filterPlayero.toLowerCase())
+      const matchTipo = filterTipo === 'all' || row.tipo === filterTipo
+      return matchPlaya && matchPlayero && matchTipo
+    })
+  }, [data, filterPlaya, filterPlayero, filterTipo])
 
   const columns: ColumnDef<PagoDetalleRow>[] = useMemo(
     () => [
@@ -119,9 +143,7 @@ export function RecaudacionPorPlayaTable({
             maximumFractionDigits: 0
           }).format(amount)
           return (
-            <div className="text-right font-bold text-green-600">
-              {formatted}
-            </div>
+            <div className="center font-bold text-green-600">{formatted}</div>
           )
         }
       }
@@ -130,7 +152,7 @@ export function RecaudacionPorPlayaTable({
   )
 
   const table = useReactTable({
-    data,
+    data: filteredData,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -145,6 +167,85 @@ export function RecaudacionPorPlayaTable({
 
   return (
     <div className="space-y-4">
+      {/* Filtros de tabla */}
+      <div className="bg-card flex flex-wrap items-end gap-4 rounded-lg border p-4">
+        <div className="min-w-[200px] flex-1">
+          <label className="mb-1.5 block text-sm font-medium">
+            Buscar Playa
+          </label>
+          <div className="relative">
+            <Input
+              placeholder="Filtrar por playa..."
+              value={filterPlaya}
+              onChange={(e) => setFilterPlaya(e.target.value)}
+              className="pr-8"
+              name={''}
+            />
+            {filterPlaya && (
+              <button
+                onClick={() => setFilterPlaya('')}
+                className="text-muted-foreground hover:text-foreground absolute top-1/2 right-2 -translate-y-1/2"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="min-w-[200px] flex-1">
+          <label className="mb-1.5 block text-sm font-medium">
+            Buscar Playero
+          </label>
+          <div className="relative">
+            <Input
+              placeholder="Filtrar por playero..."
+              value={filterPlayero}
+              onChange={(e) => setFilterPlayero(e.target.value)}
+              className="pr-8"
+              name={''}
+            />
+            {filterPlayero && (
+              <button
+                onClick={() => setFilterPlayero('')}
+                className="text-muted-foreground hover:text-foreground absolute top-1/2 right-2 -translate-y-1/2"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="w-[180px]">
+          <label className="mb-1.5 block text-sm font-medium">Tipo</label>
+          <Select
+            value={filterTipo}
+            onValueChange={(v) => setFilterTipo(v as typeof filterTipo)}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="ABONO">Abono</SelectItem>
+              <SelectItem value="OCUPACION">Ocupación</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {(filterPlaya || filterPlayero || filterTipo !== 'all') && (
+          <Button
+            variant="outline"
+            onClick={() => {
+              setFilterPlaya('')
+              setFilterPlayero('')
+              setFilterTipo('all')
+            }}
+          >
+            Limpiar filtros
+          </Button>
+        )}
+      </div>
+
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -201,9 +302,9 @@ export function RecaudacionPorPlayaTable({
             {Math.min(
               (table.getState().pagination.pageIndex + 1) *
                 table.getState().pagination.pageSize,
-              data.length
+              filteredData.length
             )}{' '}
-            de {data.length} resultados
+            de {filteredData.length} resultados
           </p>
         </div>
 

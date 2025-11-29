@@ -15,6 +15,7 @@
     "db:status": "bash scripts/db-status.sh",
     "db:check": "bash scripts/check-migrations.sh",
     "db:migrate": "bash scripts/migrate-production.sh",
+    "db:migrate:ps1": "powershell -ExecutionPolicy Bypass -File scripts/migrate-production.ps1",
     "db:seed": "node --env-file=.env.local --import tsx scripts/db-seed.ts",
     "db:seed:reportes": "node --env-file=.env.local --import tsx scripts/seed-recaudacion-reportes.ts",
     "db:setup": "bash scripts/setup-local-db.sh",
