@@ -38,6 +38,30 @@ export const pagoPorMetodoSchema = z.object({
   monto: z.number()
 })
 
+export const pagoPorMetodoDetalladoSchema = z.object({
+  metodo_pago: z.string(),
+  monto: z.number(),
+  cantidad: z.number(),
+  tipo_pago: z.string() // 'ocupacion' | 'boleta'
+})
+
+export const reportePagosMensualesSchema = z.object({
+  playa_id: z.string().uuid(),
+  playa_nombre: z.string(),
+  playa_direccion: z.string().nullable(),
+  playero_id: z.string().uuid(),
+  playero_nombre: z.string(),
+  anio: z.number(),
+  mes: z.number(),
+  recaudacion_total: z.number(),
+  total_pagos: z.number(),
+  recaudacion_ocupaciones: z.number(),
+  recaudacion_boletas: z.number(),
+  cantidad_pagos_ocupaciones: z.number(),
+  cantidad_pagos_boletas: z.number(),
+  pagos_por_metodo: z.array(pagoPorMetodoDetalladoSchema)
+})
+
 export const reporteOcupacionesPorTurnoSchema = z.object({
   playa_id: z.string().uuid(),
   playa_nombre: z.string(),
@@ -59,6 +83,10 @@ export type AbonoVigenteDetalle = z.infer<typeof abonoVigenteDetalleSchema>
 export type ReporteAbonosVigentes = z.infer<typeof reporteAbonosVigentesSchema>
 export type OcupacionDetalle = z.infer<typeof ocupacionDetalleSchema>
 export type PagoPorMetodo = z.infer<typeof pagoPorMetodoSchema>
+export type PagoPorMetodoDetallado = z.infer<
+  typeof pagoPorMetodoDetalladoSchema
+>
+export type ReportePagosMensuales = z.infer<typeof reportePagosMensualesSchema>
 export type ReporteOcupacionesPorTurno = z.infer<
   typeof reporteOcupacionesPorTurnoSchema
 >

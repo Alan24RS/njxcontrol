@@ -3,17 +3,18 @@ import { redirect } from 'next/navigation'
 import { PageContainer, PageHeader } from '@/components/layout'
 import { ROL } from '@/constants/rol'
 import { getAuthenticatedUser } from '@/lib/supabase/server'
-import { getReporteOcupacionesPorTurno } from '@/services/reportes'
+import { getReportePagosMensuales } from '@/services/reportes'
 
-import { ReportesOcupacionesContent } from './components/ReportesOcupacionesContent'
+import { ReportesPagosMensualesContent } from './components/ReportesPagosMensualesContent'
 
 interface SearchParams {
   playa?: string
-  fechaDesde?: string
-  fechaHasta?: string
+  playero?: string
+  anio?: string
+  mes?: string
 }
 
-export default async function ReportesOcupacionesPage({
+export default async function ReportesPagosMensualesPage({
   searchParams
 }: {
   searchParams: Promise<SearchParams>
@@ -33,19 +34,24 @@ export default async function ReportesOcupacionesPage({
   }
 
   const params = await searchParams
-  const { data: reportes, error } = await getReporteOcupacionesPorTurno(
+  const { data: reportes, error } = await getReportePagosMensuales(
     params.playa,
-    params.fechaDesde,
-    params.fechaHasta
+    params.playero,
+    params.anio ? parseInt(params.anio) : undefined,
+    params.mes ? parseInt(params.mes) : undefined
   )
 
   return (
     <PageContainer className="px-6">
       <PageHeader
-        title="Reportes de Ocupaciones por Turno"
-        description="Visualiza las estadísticas de ocupaciones segmentadas por turnos de trabajo"
+        title="Reportes de Pagos Mensuales"
+        description="Visualiza la recaudación consolidada de ocupaciones y boletas por mes"
       />
-      <ReportesOcupacionesContent reportes={reportes || []} error={error} />
+      <ReportesPagosMensualesContent
+        reportes={reportes || []}
+        error={error}
+        esDueno={esDueno}
+      />
     </PageContainer>
   )
 }

@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/card'
 import type { ReporteOcupacionesPorTurno } from '@/schemas/reportes'
 
+import { ReportesOcupacionesFilters } from './ReportesOcupacionesFilters'
 import { ReporteTurnoCard } from './ReporteTurnoCard'
 import { ReporteTurnoDetalle } from './ReporteTurnoDetalle'
 
@@ -43,8 +44,21 @@ export function ReportesOcupacionesContent({
     0
   )
 
+  // Obtener lista única de playas para los filtros
+  const playasUnicas = Array.from(
+    new Map(
+      reportes.map((r) => [
+        r.playa_id,
+        { playa_id: r.playa_id, nombre: r.playa_nombre }
+      ])
+    ).values()
+  )
+
   return (
     <div className="space-y-6">
+      {/* Filtros */}
+      <ReportesOcupacionesFilters playas={playasUnicas} />
+
       {/* Resumen general */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
         <Card>
