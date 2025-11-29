@@ -4,7 +4,7 @@ import { z } from 'zod'
  * Schema base para el formulario (client-side)
  * Los campos de fecha son Date objects directamente
  */
-export const recaudacionPorPlayaFiltersSchema = z
+export const recaudacionFiltersSchema = z
   .object({
     fecha_desde: z.date(),
     fecha_hasta: z.date(),
@@ -21,7 +21,7 @@ export const recaudacionPorPlayaFiltersSchema = z
  * Schema para server action (acepta strings o Date)
  * Usa coerce para convertir strings ISO a Date
  */
-export const recaudacionPorPlayaFiltersServerSchema = z
+export const recaudacionFiltersServerSchema = z
   .object({
     fecha_desde: z.coerce.date(),
     fecha_hasta: z.coerce.date(),
@@ -34,6 +34,4 @@ export const recaudacionPorPlayaFiltersServerSchema = z
     path: ['fecha_hasta']
   })
 
-export type RecaudacionPorPlayaFiltersInput = z.infer<
-  typeof recaudacionPorPlayaFiltersSchema
->
+export type RecaudacionFiltersInput = z.infer<typeof recaudacionFiltersSchema>

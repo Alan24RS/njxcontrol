@@ -258,7 +258,7 @@ El script te guiará, pero básicamente:
 **Validar resultados**:
 
 ```
-http://localhost:3000/admin/analytics/recaudacion-por-playa
+http://localhost:3000/admin/analytics/recaudacion
 ```
 
 **Documentación completa**: [`../docs/ANALISIS_OPERACIONES_BD.md`](../docs/ANALISIS_OPERACIONES_BD.md)
@@ -273,7 +273,7 @@ pnpm db:seed
 pnpm db:seed:reportes
 
 # 3. Ver reportes
-# http://localhost:3000/admin/analytics/recaudacion-por-playa
+# http://localhost:3000/admin/analytics/recaudacion
 ```
 
 ## 🔧 Comandos NPM

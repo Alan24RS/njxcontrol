@@ -39,11 +39,18 @@ if ($isLocal) {
 }
 
 Write-Host "Running report seed"
-if (-not $env:SUPABASE_SERVICE_ROLE_KEY) { throw "SUPABASE_SERVICE_ROLE_KEY is not set" }
-if ($inCI) {
-    node --import tsx scripts/seed-recaudacion-reportes.ts
+if (-not $env:SUPABASE_SERVICE_ROLE_KEY) {
+    Write-Warning "SUPABASE_SERVICE_ROLE_KEY missing; skipping report seed."
 } else {
-    node --env-file=.env.local --import tsx scripts/seed-recaudacion-reportes.ts
+    try {
+        if ($inCI) {
+            node --import tsx scripts/seed-recaudacion-reportes.ts
+        } else {
+            node --env-file=.env.local --import tsx scripts/seed-recaudacion-reportes.ts
+        }
+    } catch {
+        Write-Warning ("Report seed failed: {0}" -f $_.Exception.Message)
+    }
 }
 
 Write-Host "Done: migrations + seed"

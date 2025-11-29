@@ -1,17 +1,17 @@
 'use server'
 
-import { recaudacionPorPlayaFiltersServerSchema } from '@/schemas/analytics/recaudacion-por-playa'
+import { recaudacionFiltersServerSchema } from '@/schemas/analytics/recaudacion'
 
-import { getRecaudacionPorPlaya } from './getRecaudacionPorPlaya'
-import type { RecaudacionPorPlayaResponse } from './types'
+import { getRecaudacion } from './getRecaudacion'
+import type { RecaudacionResponse } from './types'
 
 /**
- * Server Action para obtener recaudación por playa
+ * Server Action para obtener recaudación
  * Valida permisos y ejecuta query
  */
-export async function getRecaudacionPorPlayaAction(
+export async function getRecaudacionAction(
   formData: FormData | Record<string, unknown>
-): Promise<RecaudacionPorPlayaResponse> {
+): Promise<RecaudacionResponse> {
   try {
     // Si es FormData, convertir a objeto
     const rawData =
@@ -20,7 +20,7 @@ export async function getRecaudacionPorPlayaAction(
         : formData
 
     // Validar datos de entrada (usa schema con coerce para aceptar strings)
-    const validatedData = recaudacionPorPlayaFiltersServerSchema.parse(rawData)
+    const validatedData = recaudacionFiltersServerSchema.parse(rawData)
 
     // DEUDA TÉCNICA: Validación de permisos pendiente
     // Solo el rol DUEÑO (owner) debería acceder a reportes de analytics
@@ -31,11 +31,11 @@ export async function getRecaudacionPorPlayaAction(
     // }
 
     // Ejecutar query
-    const result = await getRecaudacionPorPlaya(validatedData)
+    const result = await getRecaudacion(validatedData)
 
     return result
   } catch (error) {
-    console.error('[getRecaudacionPorPlayaAction] Error:', error)
+    console.error('[getRecaudacionAction] Error:', error)
 
     if (error instanceof Error) {
       throw error

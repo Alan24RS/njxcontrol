@@ -1,1 +1,1 @@
-export * from './useRecaudacionPorPlaya'
+export * from './useRecaudacion'

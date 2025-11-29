@@ -1,13 +1,13 @@
 import * as XLSX from 'xlsx'
 
-import type { RecaudacionPorPlayaRow } from '@/services/analytics/recaudacion-por-playa/types'
+import type { RecaudacionRow } from '@/services/analytics/recaudacion/types'
 
 /**
  * Exporta datos de recaudación a Excel
  */
 export function exportRecaudacionToExcel(
-  data: RecaudacionPorPlayaRow[],
-  filename: string = 'recaudacion-por-playa.xlsx'
+  data: RecaudacionRow[],
+  filename: string = 'recaudacion.xlsx'
 ) {
   // Transformar datos para Excel
   const excelData = data.map((row) => ({

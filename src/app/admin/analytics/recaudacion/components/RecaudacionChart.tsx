@@ -11,19 +11,19 @@ import {
   YAxis
 } from 'recharts'
 
-import type { RecaudacionDiariaRow } from '@/services/analytics/recaudacion-por-playa/types'
+import type { RecaudacionDiariaRow } from '@/services/analytics/recaudacion/types'
 
-interface RecaudacionPorPlayaChartProps {
+interface RecaudacionChartProps {
   data: RecaudacionDiariaRow[]
   fechaDesde?: Date
   fechaHasta?: Date
 }
 
-export function RecaudacionPorPlayaChart({
+export function RecaudacionChart({
   data,
   fechaDesde,
   fechaHasta
-}: RecaudacionPorPlayaChartProps) {
+}: RecaudacionChartProps) {
   // Determinar granularidad según rango
   const start = fechaDesde ?? (data[0] ? new Date(data[0].fecha) : new Date())
   const end =

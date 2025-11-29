@@ -8,17 +8,17 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useGetPlayeros } from '@/hooks/queries/analytics/useGetPlayeros'
-import { useRecaudacionPorPlaya } from '@/hooks/queries/analytics/useRecaudacionPorPlaya'
+import { useRecaudacion } from '@/hooks/queries/analytics/useRecaudacion'
 import { useGetUserPlayas } from '@/hooks/queries/playas/useGetUserPlayas'
-import type { RecaudacionPorPlayaFiltersInput } from '@/schemas/analytics/recaudacion-por-playa'
+import type { RecaudacionFiltersInput } from '@/schemas/analytics/recaudacion'
 import { exportRecaudacionToExcel } from '@/utils/analytics'
 
-import { RecaudacionPorPlayaChart } from './components/RecaudacionPorPlayaChart'
-import { RecaudacionPorPlayaFilters } from './components/RecaudacionPorPlayaFilters'
-import { RecaudacionPorPlayaTable } from './components/RecaudacionPorPlayaTable'
+import { RecaudacionChart } from './components/RecaudacionChart'
+import { RecaudacionFilters } from './components/RecaudacionFilters'
+import { RecaudacionTable } from './components/RecaudacionTable'
 
-export function RecaudacionPorPlayaContent() {
-  const [filters, setFilters] = useState<RecaudacionPorPlayaFiltersInput>({
+export function RecaudacionContent() {
+  const [filters, setFilters] = useState<RecaudacionFiltersInput>({
     fecha_desde: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
     fecha_hasta: new Date(),
     playa_id: null
@@ -27,7 +27,7 @@ export function RecaudacionPorPlayaContent() {
   const [enabled, setEnabled] = useState<boolean>(false)
   const [contarSoloDiasActivos, setContarSoloDiasActivos] =
     useState<boolean>(true)
-  const { data, isLoading, isError, error, refetch } = useRecaudacionPorPlaya(
+  const { data, isLoading, isError, error, refetch } = useRecaudacion(
     filters,
     enabled
   )
@@ -72,7 +72,7 @@ export function RecaudacionPorPlayaContent() {
     }
   }, [data, filters.fecha_desde, filters.fecha_hasta, contarSoloDiasActivos])
 
-  const onFiltersSubmit = (next: RecaudacionPorPlayaFiltersInput) => {
+  const onFiltersSubmit = (next: RecaudacionFiltersInput) => {
     setFilters(next)
     if (!enabled) setEnabled(true)
     // Forzar refetch con los nuevos filtros
@@ -91,10 +91,11 @@ export function RecaudacionPorPlayaContent() {
       <div className="space-y-2">
         <h3 className="text-lg font-medium">Filtros</h3>
         <p className="text-muted-foreground text-sm">
-          Define rango de fechas, playa, playero y tipo de ingreso.
+          Ajusta los parámetros para generar el reporte de recaudación según tus
+          necesidades.
         </p>
       </div>
-      <RecaudacionPorPlayaFilters
+      <RecaudacionFilters
         playas={
           playas
             ?.filter((p) => p.nombre) // Filtrar playas sin nombre
@@ -125,15 +126,9 @@ export function RecaudacionPorPlayaContent() {
       {/* KPIs */}
       {data && (
         <>
-          <div className="space-y-2">
-            <h3 className="text-lg font-medium">Resumen de Ingresos</h3>
-            <p className="text-muted-foreground text-sm">
-              Totales y estadísticas clave del periodo seleccionado.
-            </p>
-          </div>
           {/* Información de filtros activos */}
           <Alert>
-            <Info className="h-4 w-4" />
+            <Info className="h-4 w-4 border-green-400" />
             <AlertDescription>
               <strong>Reporte generado:</strong>{' '}
               {new Intl.DateTimeFormat('es-AR', { dateStyle: 'medium' }).format(
@@ -168,6 +163,12 @@ export function RecaudacionPorPlayaContent() {
             </AlertDescription>
           </Alert>
 
+          <div className="space-y-2">
+            <h3 className="text-lg font-medium">Resumen de Ingresos</h3>
+            <p className="text-muted-foreground text-sm">
+              Totales y estadísticas clave del periodo seleccionado.
+            </p>
+          </div>
           <div className="grid gap-4 md:grid-cols-3">
             <div className="bg-card rounded-lg border p-6">
               <div className="text-muted-foreground text-sm font-medium">
@@ -346,7 +347,7 @@ export function RecaudacionPorPlayaContent() {
               Desliza horizontalmente para explorar.
             </p>
           </div>
-          <RecaudacionPorPlayaChart
+          <RecaudacionChart
             data={data.dataDiaria}
             fechaDesde={filters.fecha_desde}
             fechaHasta={filters.fecha_hasta}
@@ -367,7 +368,7 @@ export function RecaudacionPorPlayaContent() {
               </Button>
             </div>
           </div>
-          <RecaudacionPorPlayaTable data={data.pagos} />
+          <RecaudacionTable data={data.pagos} />
         </>
       )}
 

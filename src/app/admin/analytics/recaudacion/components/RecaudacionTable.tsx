@@ -31,15 +31,13 @@ import {
   TableHeader,
   TableRow
 } from '@/components/ui/table'
-import type { PagoDetalleRow } from '@/services/analytics/recaudacion-por-playa/types'
+import type { PagoDetalleRow } from '@/services/analytics/recaudacion/types'
 
-interface RecaudacionPorPlayaTableProps {
+interface RecaudacionTableProps {
   data: PagoDetalleRow[]
 }
 
-export function RecaudacionPorPlayaTable({
-  data
-}: RecaudacionPorPlayaTableProps) {
+export function RecaudacionTable({ data }: RecaudacionTableProps) {
   const [sorting, setSorting] = useState<SortingState>([
     { id: 'fecha', desc: true }
   ])

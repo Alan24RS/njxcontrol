@@ -28,14 +28,49 @@ import {
   type TestTurno
 } from './seeds/dev/recaudacion-reportes'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+// --------------------------------------------------------------
+//  VALIDACIÓN DE ENTORNO / CLAVES
+// --------------------------------------------------------------
+const inCI =
+  process.env.CI === 'true' ||
+  process.env.VERCEL === '1' ||
+  process.env.GITHUB_ACTIONS === 'true'
 
-if (!supabaseUrl || !supabaseServiceRoleKey) {
-  console.error('❌ Missing environment variables:')
-  console.error('NEXT_PUBLIC_SUPABASE_URL:', !!supabaseUrl)
-  console.error('SUPABASE_SERVICE_ROLE_KEY:', !!supabaseServiceRoleKey)
-  process.exit(1)
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+
+// Intentar varias variables posibles por si el nombre varía
+const supabaseServiceRoleKey =
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  process.env.SUPABASE_SERVICE_ROLE ||
+  process.env.SUPABASE_SERVICE_KEY ||
+  ''
+
+const isKeyPlausible = (key: string) => key.length > 40 && key.startsWith('ey')
+
+if (!supabaseUrl) {
+  console.error('❌ Falta NEXT_PUBLIC_SUPABASE_URL.')
+  // En CI no podemos continuar de forma útil, pero no queremos tumbar el build si es opcional.
+  if (inCI) {
+    console.warn('⚠️ Seed de recaudación omitido: URL ausente en CI.')
+    process.exit(0)
+  } else {
+    process.exit(1)
+  }
+}
+
+if (!isKeyPlausible(supabaseServiceRoleKey)) {
+  console.error('⚠️ Clave service role inválida o ausente.')
+  if (inCI) {
+    console.warn(
+      '⚠️ Seed OMITIDO en CI: revisa SUPABASE_SERVICE_ROLE_KEY. No se generarán datos de reportes.'
+    )
+    process.exit(0)
+  } else {
+    console.error(
+      '❌ Debes definir SUPABASE_SERVICE_ROLE_KEY (service role) para ejecutar este seed localmente.'
+    )
+    process.exit(1)
+  }
 }
 
 const supabase = createClient(supabaseUrl, supabaseServiceRoleKey, {
@@ -190,7 +225,7 @@ async function main() {
 
   console.log('✅ Seed de reportes completado exitosamente!')
   console.log('\n📊 Ahora puedes probar los reportes en:')
-  console.log('   http://localhost:3000/admin/analytics/recaudacion-por-playa')
+  console.log('   http://localhost:3000/admin/analytics/recaudacion')
 }
 
 async function insertarTurnos(turnos: TestTurno[]) {
@@ -476,7 +511,14 @@ async function procesarAbonos(abonos: TestAbono[]) {
   console.log(`   📊 Procesados: ${procesados}, Errores: ${errores}`)
 }
 
-main().catch((error) => {
+main().catch((error: any) => {
+  const msg = error?.message || ''
+  if (inCI && /Invalid API key/i.test(msg)) {
+    console.warn(
+      '⚠️ Seed de recaudación abortado (Invalid API key) pero CI continuará. Verifica la service role key.'
+    )
+    process.exit(0)
+  }
   console.error('❌ Error fatal:', error)
   process.exit(1)
 })

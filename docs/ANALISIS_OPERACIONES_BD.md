@@ -672,5 +672,5 @@ Este análisis cubre:
 **Próximos pasos:**
 1. Ejecutar `db-seed.ts` para estructura base
 2. Ejecutar `seed-recaudacion-reportes.ts` para datos históricos
-3. Probar reportes en `/admin/analytics/recaudacion-por-playa`
+3. Probar reportes en `/admin/analytics/recaudacion`
 4. Ajustar cantidades/fechas según necesidades de prueba
