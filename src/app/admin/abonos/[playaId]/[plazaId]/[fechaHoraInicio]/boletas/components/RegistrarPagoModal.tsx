@@ -1,12 +1,14 @@
 'use client'
 
-import { useState } from 'react'
+import { startTransition, useEffect, useMemo, useRef } from 'react'
+import { useActionState } from 'react'
 import { useForm } from 'react-hook-form'
 
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
 import { z } from 'zod'
 
+import { registrarPagoBoletaAction } from '@/app/admin/abonos/actions'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -33,20 +35,20 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select'
-import { Spinner } from '@/components/ui/spinner'
-import { METODO_PAGO, METODO_PAGO_LABEL } from '@/constants/metodoPago'
+import { useGetMetodosPagoPlaya } from '@/hooks/queries/metodos-pago-playa/getMetodosPagoPlaya'
 import type { Boleta } from '@/services/abonos/types'
+
+type RegistrarPagoFormData = {
+  monto: number
+  metodoPago: string
+}
 
 const registrarPagoSchema = z.object({
   monto: z
     .number({ message: 'El monto es requerido' })
     .positive('El monto debe ser mayor a 0'),
-  metodoPago: z.enum(['EFECTIVO', 'TRANSFERENCIA', 'MERCADO_PAGO'], {
-    message: 'Selecciona un método de pago'
-  })
+  metodoPago: z.string({ message: 'Selecciona un método de pago' })
 })
-
-type RegistrarPagoFormData = z.infer<typeof registrarPagoSchema>
 
 interface RegistrarPagoModalProps {
   boleta: Boleta
@@ -61,7 +63,33 @@ export default function RegistrarPagoModal({
   onClose,
   onSuccess
 }: RegistrarPagoModalProps) {
-  const [loading, setLoading] = useState(false)
+  const [formState, formAction, pending] = useActionState(
+    registrarPagoBoletaAction,
+    {
+      success: false
+    }
+  )
+
+  const formRef = useRef<HTMLFormElement>(null)
+  const processedSuccessRef = useRef(false)
+
+  const { data: metodosPagoResponse } = useGetMetodosPagoPlaya(
+    {
+      playaId: boleta.playaId,
+      page: 1,
+      limit: 50
+    },
+    {
+      enabled: isOpen && !!boleta.playaId
+    }
+  )
+
+  const metodosActivos = useMemo(
+    () =>
+      metodosPagoResponse?.data?.filter((item) => item.estado === 'ACTIVO') ||
+      [],
+    [metodosPagoResponse]
+  )
 
   const form = useForm<RegistrarPagoFormData>({
     resolver: zodResolver(registrarPagoSchema),
@@ -73,56 +101,99 @@ export default function RegistrarPagoModal({
 
   const watchMonto = form.watch('monto')
 
-  const onSubmit = async (data: RegistrarPagoFormData) => {
+  useEffect(() => {
+    if (formState.success && !processedSuccessRef.current) {
+      processedSuccessRef.current = true
+      const deudaRestante = formState.data?.deudaPendiente || 0
+      const montoPagado = watchMonto
+
+      if (deudaRestante === 0) {
+        toast.success('¡Boleta pagada completamente!', {
+          description: `Se registró un pago de $${montoPagado.toLocaleString()}`
+        })
+      } else {
+        toast.success('Pago registrado exitosamente', {
+          description: `Monto pagado: $${montoPagado.toLocaleString()}. Resta pagar: $${deudaRestante.toLocaleString()}`
+        })
+      }
+
+      form.reset()
+      onSuccess()
+      onClose()
+    } else if (formState.error) {
+      toast.error('Error al registrar pago', {
+        description: formState.error
+      })
+    } else if (formState.errors) {
+      Object.entries(formState.errors).forEach(([field, errors]) => {
+        if (field === 'general') {
+          toast.error('Error', {
+            description: errors.join(', '),
+            duration: 6000
+          })
+        } else {
+          errors.forEach((error) => {
+            toast.error(`Error en ${field}`, {
+              description: error,
+              duration: 5000
+            })
+          })
+        }
+      })
+    }
+  }, [formState, watchMonto, onSuccess, onClose, form])
+
+  useEffect(() => {
+    if (!isOpen) {
+      processedSuccessRef.current = false
+      form.reset({
+        monto: boleta.deudaPendiente,
+        metodoPago: undefined
+      })
+    }
+  }, [isOpen, boleta.deudaPendiente, form])
+
+  const handleSubmit = (data: RegistrarPagoFormData) => {
     if (data.monto > boleta.deudaPendiente) {
       toast.error('El monto no puede ser mayor a la deuda pendiente')
       return
     }
 
-    setLoading(true)
-    try {
-      const { registrarPagoBoletaAction } = await import(
-        '@/app/admin/abonos/actions'
-      )
-      const result = await registrarPagoBoletaAction({
-        playaId: boleta.playaId,
-        plazaId: boleta.plazaId,
-        fechaHoraInicioAbono: boleta.fechaHoraInicioAbono.toISOString(),
-        fechaGeneracionBoleta: boleta.fechaGeneracion.toISOString(),
-        monto: data.monto,
-        metodoPago: data.metodoPago
-      })
-
-      if (result.error) {
-        toast.error('Error al registrar pago', {
-          description: result.error
-        })
-        return
-      }
-
-      const deudaRestante = result.data?.deudaPendiente || 0
-
-      if (deudaRestante === 0) {
-        toast.success('¡Boleta pagada completamente!', {
-          description: `Se registró un pago de $${data.monto.toLocaleString()}`
-        })
-      } else {
-        toast.success('Pago registrado exitosamente', {
-          description: `Monto pagado: $${data.monto.toLocaleString()}. Resta pagar: $${deudaRestante.toLocaleString()}`
-        })
-      }
-
-      onSuccess()
-    } catch (error) {
-      toast.error('Error inesperado', {
-        description:
-          error instanceof Error
-            ? error.message
-            : 'No se pudo registrar el pago'
-      })
-    } finally {
-      setLoading(false)
+    if (data.monto <= 0) {
+      toast.error('El monto debe ser mayor a 0')
+      return
     }
+
+    if (!data.metodoPago) {
+      toast.error('Selecciona un método de pago')
+      return
+    }
+
+    const metodoValido = metodosActivos.some(
+      (m) => m.metodoPago === data.metodoPago
+    )
+    if (!metodoValido) {
+      toast.error('El método de pago seleccionado no está disponible')
+      return
+    }
+
+    const formData = new FormData()
+    formData.append('playaId', boleta.playaId)
+    formData.append('plazaId', boleta.plazaId)
+    formData.append(
+      'fechaHoraInicioAbono',
+      boleta.fechaHoraInicioAbono.toISOString()
+    )
+    formData.append(
+      'fechaGeneracionBoleta',
+      boleta.fechaGeneracion.toISOString()
+    )
+    formData.append('monto', data.monto.toString())
+    formData.append('metodoPago', data.metodoPago)
+
+    startTransition(() => {
+      formAction(formData)
+    })
   }
 
   return (
@@ -136,7 +207,12 @@ export default function RegistrarPagoModal({
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form
+            ref={formRef}
+            action={formAction}
+            onSubmit={form.handleSubmit(handleSubmit)}
+            className="space-y-4"
+          >
             <FormField
               control={form.control}
               name="monto"
@@ -184,11 +260,20 @@ export default function RegistrarPagoModal({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {Object.values(METODO_PAGO).map((value) => (
-                        <SelectItem key={value} value={value}>
-                          {METODO_PAGO_LABEL[value]}
+                      {metodosActivos.length > 0 ? (
+                        metodosActivos.map((metodo) => (
+                          <SelectItem
+                            key={metodo.metodoPago}
+                            value={metodo.metodoPago}
+                          >
+                            {metodo.metodoPago}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="" disabled>
+                          No hay métodos de pago activos
                         </SelectItem>
-                      ))}
+                      )}
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -200,20 +285,13 @@ export default function RegistrarPagoModal({
               <Button
                 variant="outline"
                 onClick={onClose}
-                disabled={loading}
+                disabled={pending}
                 type="button"
               >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={loading}>
-                {loading ? (
-                  <>
-                    <Spinner className="mr-2 h-4 w-4" />
-                    Registrando...
-                  </>
-                ) : (
-                  'Registrar pago'
-                )}
+              <Button type="submit" disabled={pending} loading={pending}>
+                Registrar pago
               </Button>
             </DialogFooter>
           </form>
