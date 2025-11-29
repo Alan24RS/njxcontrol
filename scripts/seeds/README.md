@@ -271,7 +271,7 @@ pnpm db:seed
 pnpm db:seed:reportes
 
 # 3. Ver resultados en:
-# http://localhost:3000/admin/analytics/recaudacion-por-playa
+# http://localhost:3000/admin/analytics/recaudacion
 ```
 
 Ver documentación completa en: `docs/ANALISIS_OPERACIONES_BD.md`

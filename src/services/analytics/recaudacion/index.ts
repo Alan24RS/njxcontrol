@@ -1,3 +1,3 @@
 export * from './actions'
-export * from './getRecaudacionPorPlaya'
+export * from './getRecaudacion'
 export * from './types'

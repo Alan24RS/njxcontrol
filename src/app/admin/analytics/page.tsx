@@ -21,7 +21,7 @@ const analyticsReports = [
     title: 'Recaudación',
     description: 'Análisis de ingresos mensuales agrupados por ubicación',
     icon: BarChart3,
-    href: '/admin/analytics/recaudacion-por-playa',
+    href: '/admin/analytics/recaudacion',
     color: 'text-blue-600',
     bgColor: 'bg-blue-50'
   },

@@ -1,1 +1,1 @@
-export * from './recaudacion-por-playa'
+export * from './recaudacion'

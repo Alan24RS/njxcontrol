@@ -3,18 +3,18 @@ import { createClient } from '@/lib/supabase/server'
 import type {
   PagoDetalleRow,
   RecaudacionDiariaRow,
-  RecaudacionPorPlayaFilters,
-  RecaudacionPorPlayaResponse,
-  RecaudacionPorPlayaRow
+  RecaudacionFilters,
+  RecaudacionResponse,
+  RecaudacionRow
 } from './types'
 
 /**
  * Obtiene la recaudación mensual agrupada por playa y diaria por tipo
  * Consulta la tabla pago que contiene todos los ingresos (ocupaciones y abonos)
  */
-export async function getRecaudacionPorPlaya(
-  filters: RecaudacionPorPlayaFilters
-): Promise<RecaudacionPorPlayaResponse> {
+export async function getRecaudacion(
+  filters: RecaudacionFilters
+): Promise<RecaudacionResponse> {
   const supabase = await createClient()
 
   // Query para obtener pagos con información de tipo
@@ -34,7 +34,7 @@ export async function getRecaudacionPorPlaya(
   const { data: pagosData, error } = await queryPagos
 
   if (error) {
-    console.error('[getRecaudacionPorPlaya] Error:', error)
+    console.error('[getRecaudacion] Error:', error)
     throw new Error(`Error al obtener recaudación: ${error.message}`)
   }
 
@@ -79,10 +79,7 @@ export async function getRecaudacionPorPlaya(
     .in('playa_id', playaIds)
 
   if (playasError) {
-    console.error(
-      '[getRecaudacionPorPlaya] Error al obtener playas:',
-      playasError
-    )
+    console.error('[getRecaudacion] Error al obtener playas:', playasError)
   }
 
   // Crear mapa de playa_id -> nombre
@@ -110,7 +107,7 @@ export async function getRecaudacionPorPlaya(
 
     if (playerosError) {
       console.error(
-        '[getRecaudacionPorPlaya] Error al obtener playeros:',
+        '[getRecaudacion] Error al obtener playeros:',
         playerosError
       )
     }
@@ -122,7 +119,7 @@ export async function getRecaudacionPorPlaya(
   }
 
   // Agrupar por playa y mes (para tabla)
-  const grouped = new Map<string, RecaudacionPorPlayaRow>()
+  const grouped = new Map<string, RecaudacionRow>()
 
   // Agrupar por día (para gráfico)
   const groupedDiario = new Map<string, RecaudacionDiariaRow>()

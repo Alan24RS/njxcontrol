@@ -2,23 +2,23 @@
 
 import { useQuery } from '@tanstack/react-query'
 
-import { getRecaudacionPorPlayaAction } from '@/services/analytics/recaudacion-por-playa/actions'
+import { getRecaudacionAction } from '@/services/analytics/recaudacion/actions'
 import type {
-  RecaudacionPorPlayaFilters,
-  UseRecaudacionPorPlayaResult
-} from '@/services/analytics/recaudacion-por-playa/types'
+  RecaudacionFilters,
+  UseRecaudacionResult
+} from '@/services/analytics/recaudacion/types'
 
 /**
- * Hook para obtener datos de recaudación por playa
+ * Hook para obtener datos de recaudación
  * Usa TanStack Query para caching y refetch automático
  */
-export function useRecaudacionPorPlaya(
-  filters: RecaudacionPorPlayaFilters,
+export function useRecaudacion(
+  filters: RecaudacionFilters,
   enabled: boolean = true
-): UseRecaudacionPorPlayaResult {
+): UseRecaudacionResult {
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: [
-      'recaudacion-por-playa',
+      'recaudacion',
       {
         fecha_desde: filters.fecha_desde.toISOString(),
         fecha_hasta: filters.fecha_hasta.toISOString(),
@@ -36,7 +36,7 @@ export function useRecaudacionPorPlaya(
         playero_id: filters.playero_id ?? null,
         tipo: filters.tipo ?? null
       }
-      return await getRecaudacionPorPlayaAction(payload)
+      return await getRecaudacionAction(payload)
     },
     staleTime: 5 * 60 * 1000, // 5 minutos
     gcTime: 10 * 60 * 1000, // 10 minutos (antes cacheTime)

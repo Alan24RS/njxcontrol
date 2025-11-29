@@ -31,28 +31,28 @@ import {
 } from '@/components/ui/select'
 import useQueryParams from '@/hooks/useQueryParams'
 import { cn } from '@/lib/utils'
-import type { RecaudacionPorPlayaFiltersInput } from '@/schemas/analytics/recaudacion-por-playa'
-import { recaudacionPorPlayaFiltersSchema } from '@/schemas/analytics/recaudacion-por-playa'
+import type { RecaudacionFiltersInput } from '@/schemas/analytics/recaudacion'
+import { recaudacionFiltersSchema } from '@/schemas/analytics/recaudacion'
 
-interface RecaudacionPorPlayaFiltersProps {
+interface RecaudacionFiltersProps {
   playas: Array<{ playa_id: string; nombre: string }>
   playeros: Array<{ playero_id: string; usuario_nombre: string }>
-  onFilterChange: (filters: RecaudacionPorPlayaFiltersInput) => void
+  onFilterChange: (filters: RecaudacionFiltersInput) => void
   isLoadingPlayas?: boolean
   isLoadingPlayeros?: boolean
 }
 
-export function RecaudacionPorPlayaFilters({
+export function RecaudacionFilters({
   playas,
   playeros,
   onFilterChange,
   isLoadingPlayas = false,
   isLoadingPlayeros = false
-}: RecaudacionPorPlayaFiltersProps) {
+}: RecaudacionFiltersProps) {
   const { searchParams, handleParamsChange } = useQueryParams()
 
   // Valores iniciales desde URL o defaults
-  const defaultValues: RecaudacionPorPlayaFiltersInput = {
+  const defaultValues: RecaudacionFiltersInput = {
     fecha_desde: searchParams.get('fecha_desde')
       ? new Date(searchParams.get('fecha_desde')!)
       : new Date(new Date().getFullYear(), new Date().getMonth(), 1),
@@ -64,12 +64,12 @@ export function RecaudacionPorPlayaFilters({
     tipo: (searchParams.get('tipo') as 'ABONO' | 'OCUPACION' | null) || null
   }
 
-  const form = useForm<RecaudacionPorPlayaFiltersInput>({
-    resolver: zodResolver(recaudacionPorPlayaFiltersSchema),
+  const form = useForm<RecaudacionFiltersInput>({
+    resolver: zodResolver(recaudacionFiltersSchema),
     defaultValues
   })
 
-  const onSubmit = (data: RecaudacionPorPlayaFiltersInput) => {
+  const onSubmit = (data: RecaudacionFiltersInput) => {
     // Actualizar URL params
     handleParamsChange([
       {
@@ -97,13 +97,13 @@ export function RecaudacionPorPlayaFilters({
       >
         <div className="space-y-4">
           {/* Fila de filtros */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="grid grid-cols-1 items-end gap-x-4 gap-y-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
             {/* Fecha Desde */}
             <FormField
               control={form.control}
               name="fecha_desde"
               render={({ field }) => (
-                <FormItem className="flex flex-col">
+                <FormItem className="min-w-0 space-y-2">
                   <FormLabel>Fecha Desde</FormLabel>
                   <Popover>
                     <PopoverTrigger asChild>
@@ -111,7 +111,7 @@ export function RecaudacionPorPlayaFilters({
                         <Button
                           variant="outline"
                           className={cn(
-                            'w-full pl-3 text-left font-normal',
+                            'h-10 w-full pl-3 text-left font-normal',
                             !field.value && 'text-muted-foreground'
                           )}
                         >
@@ -147,7 +147,7 @@ export function RecaudacionPorPlayaFilters({
               control={form.control}
               name="fecha_hasta"
               render={({ field }) => (
-                <FormItem className="flex flex-col">
+                <FormItem className="min-w-0 space-y-2">
                   <FormLabel>Fecha Hasta</FormLabel>
                   <Popover>
                     <PopoverTrigger asChild>
@@ -155,7 +155,7 @@ export function RecaudacionPorPlayaFilters({
                         <Button
                           variant="outline"
                           className={cn(
-                            'w-full pl-3 text-left font-normal',
+                            'h-10 w-full pl-3 text-left font-normal',
                             !field.value && 'text-muted-foreground'
                           )}
                         >
@@ -191,7 +191,7 @@ export function RecaudacionPorPlayaFilters({
               control={form.control}
               name="playa_id"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="min-w-0 space-y-2">
                   <FormLabel>Playa</FormLabel>
                   <Select
                     onValueChange={(value) =>
@@ -200,7 +200,10 @@ export function RecaudacionPorPlayaFilters({
                     value={field.value || 'all'}
                   >
                     <FormControl>
-                      <SelectTrigger disabled={isLoadingPlayas}>
+                      <SelectTrigger
+                        disabled={isLoadingPlayas}
+                        className="h-10 w-full"
+                      >
                         <SelectValue
                           placeholder={
                             isLoadingPlayas
@@ -229,7 +232,7 @@ export function RecaudacionPorPlayaFilters({
               control={form.control}
               name="playero_id"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="min-w-0 space-y-2">
                   <FormLabel>Playero</FormLabel>
                   <Select
                     onValueChange={(value) =>
@@ -238,7 +241,10 @@ export function RecaudacionPorPlayaFilters({
                     value={field.value || 'all'}
                   >
                     <FormControl>
-                      <SelectTrigger disabled={isLoadingPlayeros}>
+                      <SelectTrigger
+                        disabled={isLoadingPlayeros}
+                        className="h-10 w-full"
+                      >
                         <SelectValue
                           placeholder={
                             isLoadingPlayeros
@@ -270,7 +276,7 @@ export function RecaudacionPorPlayaFilters({
               control={form.control}
               name="tipo"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="min-w-0 space-y-2">
                   <FormLabel>Tipo de ingreso</FormLabel>
                   <Select
                     onValueChange={(value) =>
@@ -279,7 +285,7 @@ export function RecaudacionPorPlayaFilters({
                     value={field.value || 'all'}
                   >
                     <FormControl>
-                      <SelectTrigger>
+                      <SelectTrigger className="h-10 w-full">
                         <SelectValue placeholder="Todos" />
                       </SelectTrigger>
                     </FormControl>

@@ -1,7 +1,7 @@
 /**
- * Fila de datos del reporte de recaudación por playa
+ * Fila de datos del reporte de recaudación
  */
-export interface RecaudacionPorPlayaRow {
+export interface RecaudacionRow {
   playa_id: string
   playa_nombre: string
   mes: string // ISO string: "2025-11-01T00:00:00Z"
@@ -37,7 +37,7 @@ export interface PagoDetalleRow {
 /**
  * Filtros para el reporte
  */
-export interface RecaudacionPorPlayaFilters {
+export interface RecaudacionFilters {
   fecha_desde: Date
   fecha_hasta: Date
   playa_id?: string | null // null = todas las playas
@@ -48,8 +48,8 @@ export interface RecaudacionPorPlayaFilters {
 /**
  * Respuesta del endpoint
  */
-export interface RecaudacionPorPlayaResponse {
-  data: RecaudacionPorPlayaRow[]
+export interface RecaudacionResponse {
+  data: RecaudacionRow[]
   dataDiaria: RecaudacionDiariaRow[]
   pagos: PagoDetalleRow[]
   totales: {
@@ -63,8 +63,8 @@ export interface RecaudacionPorPlayaResponse {
 /**
  * Formato para TanStack Query
  */
-export interface UseRecaudacionPorPlayaResult {
-  data: RecaudacionPorPlayaResponse | undefined
+export interface UseRecaudacionResult {
+  data: RecaudacionResponse | undefined
   isLoading: boolean
   isError: boolean
   error: Error | null
