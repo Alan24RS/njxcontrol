@@ -1,4 +1,5 @@
 import {
+  BarChart3,
   CalendarIcon,
   CarFront,
   ChartBar,
@@ -25,6 +26,19 @@ export const general: SidebarItem[] = [
     icon: HomeIcon,
     isActive: false,
     roles: [ROL.DUENO, ROL.PLAYERO]
+  },
+  {
+    title: 'Analytics',
+    url: '/admin/analytics',
+    icon: BarChart3,
+    isActive: false,
+    roles: [ROL.DUENO],
+    items: [
+      {
+        title: 'Recaudación por Playa',
+        url: '/admin/analytics/recaudacion-por-playa'
+      }
+    ]
   },
   {
     title: 'Reportes',

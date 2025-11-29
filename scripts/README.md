@@ -222,7 +222,7 @@ El script te guiará, pero básicamente:
 
 #### `db-seed.ts`
 
-**Script unificado** que ejecuta todos los seeds:
+**Script unificado** que ejecuta todos los seeds base:
 
 - Datos maestros (características, etc.)
 - Datos de prueba (usuarios, playas, tarifas, etc.)
@@ -232,7 +232,49 @@ El script te guiará, pero básicamente:
 - `seeds/base/` - Datos maestros
 - `seeds/dev/` - Datos de prueba
 
-**Uso**: `pnpm db:seed` - Ejecuta todo
+**Uso**: `pnpm db:seed` - Ejecuta seed base completo
+
+---
+
+#### `seed-recaudacion-reportes.ts` ⭐ NUEVO
+
+**Script especializado** para generar datos históricos de recaudación:
+
+- ~40 turnos distribuidos en últimos 30 días
+- ~120 ocupaciones finalizadas con pagos
+- ~10 abonos activos con pagos iniciales
+- Mix realista de métodos de pago y tipos de vehículos
+- Recaudación total: ~$500,000-800,000 ARS
+
+**Datos generados en**: `seeds/dev/recaudacion-reportes.ts`
+
+**Prerequisitos**:
+
+1. Ejecutar `pnpm db:seed` primero (estructura base)
+2. Supabase local corriendo
+
+**Uso**: `pnpm db:seed:reportes`
+
+**Validar resultados**:
+
+```
+http://localhost:3000/admin/analytics/recaudacion-por-playa
+```
+
+**Documentación completa**: [`../docs/ANALISIS_OPERACIONES_BD.md`](../docs/ANALISIS_OPERACIONES_BD.md)
+
+**Workflow recomendado**:
+
+```bash
+# 1. Setup base
+pnpm db:seed
+
+# 2. Agregar datos históricos
+pnpm db:seed:reportes
+
+# 3. Ver reportes
+# http://localhost:3000/admin/analytics/recaudacion-por-playa
+```
 
 ## 🔧 Comandos NPM
 
@@ -255,8 +297,9 @@ pnpm db:setup
 # Reset completo + seed (solo desarrollo)
 pnpm db:reset
 
-# Seed completo (base + dev data)
-pnpm db:seed
+# Seeds
+pnpm db:seed          # Seed base: estructura y configuración
+pnpm db:seed:reportes # ⭐ NUEVO: Datos históricos para reportes
 ```
 
 ### 💡 Comando Recomendado Antes de Deploy

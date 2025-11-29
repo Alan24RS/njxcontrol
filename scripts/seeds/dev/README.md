@@ -34,6 +34,50 @@ export const PLAYA_2_ID = 'uuid-fijo'
 export const testPlayas = [...]
 ```
 
+### `recaudacion-reportes.ts` ⭐ NUEVO
+
+Generador de datos históricos para probar reportes de recaudación.
+
+**Propósito:** Crear turnos, ocupaciones finalizadas y abonos con pagos para validar los reportes de analytics.
+
+**Funciones principales:**
+
+```typescript
+// Genera fechas de turnos (últimos 30 días)
+export function generarFechasTurnos(): Date[]
+
+// Genera turnos distribuidos para múltiples playeros
+export function generarTestTurnos(
+  playeroId1,
+  playeroId2,
+  playeroId3,
+  playeroId4
+): TestTurno[]
+
+// Genera ocupaciones finalizadas con pagos
+export function generarTestOcupaciones(turnos): TestOcupacion[]
+
+// Genera abonos con pagos iniciales
+export function generarTestAbonos(turnos): TestAbono[]
+
+// Obtiene resumen de datos generados
+export function obtenerResumenDatos(turnos, ocupaciones, abonos)
+```
+
+**Script de ejecución:** `scripts/seed-recaudacion-reportes.ts`
+
+**Comando:** `pnpm db:seed:reportes`
+
+**Datos generados:**
+
+- ~40 turnos en últimos 30 días
+- ~120 ocupaciones (70% por hora, 30% diarias)
+- ~10 abonos activos
+- Mix de métodos de pago y tipos de vehículos
+- Recaudación total: ~$500,000-800,000 ARS
+
+**Documentación completa:** `docs/ANALISIS_OPERACIONES_BD.md`
+
 ### `tarifas.ts`
 
 **Generador automático** de tarifas MENSUAL basadas en tarifas DIARIAS.
