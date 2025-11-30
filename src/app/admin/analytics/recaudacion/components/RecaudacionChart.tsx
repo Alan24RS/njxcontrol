@@ -59,9 +59,9 @@ export function RecaudacionChart({
     return { key: iso, label: `Sem ${formatDate(date)}` }
   }
 
-  // Rellenar todas las fechas del rango según granularidad
+  // Rellenar todas las fechas/semanas/meses del rango según granularidad
   if (days < 30) {
-    // Modo diario: crear entrada para cada día
+    // Diario
     const current = new Date(start)
     while (current <= end) {
       const key = current.toISOString().slice(0, 10)
@@ -74,6 +74,40 @@ export function RecaudacionChart({
         })
       }
       current.setDate(current.getDate() + 1)
+    }
+  } else if (days < 365) {
+    // Semanal: iterar por semanas completas entre start y end
+    const cursor = new Date(start)
+    // normalizar a lunes
+    const startDay = cursor.getDay() || 7
+    if (startDay !== 1) cursor.setDate(cursor.getDate() - (startDay - 1))
+    while (cursor <= end) {
+      const wk = getWeekKey(cursor)
+      if (!buckets.has(wk.key)) {
+        buckets.set(wk.key, {
+          label: wk.label,
+          total: 0,
+          abonos: 0,
+          ocupaciones: 0
+        })
+      }
+      cursor.setDate(cursor.getDate() + 7)
+    }
+  } else {
+    // Mensual: prellenar meses
+    const current = new Date(start.getFullYear(), start.getMonth(), 1)
+    const endMonth = new Date(end.getFullYear(), end.getMonth(), 1)
+    while (current <= endMonth) {
+      const key = current.toISOString().slice(0, 7)
+      if (!buckets.has(key)) {
+        buckets.set(key, {
+          label: formatMonth(current),
+          total: 0,
+          abonos: 0,
+          ocupaciones: 0
+        })
+      }
+      current.setMonth(current.getMonth() + 1)
     }
   }
 

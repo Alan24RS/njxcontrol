@@ -38,10 +38,9 @@ const analyticsReports = [
     title: 'Performance de Playeros',
     description: 'Recaudación generada por cada playero',
     icon: Users,
-    href: '/admin/analytics/recaudacion-por-playero',
+    href: '/admin/analytics/performance-playero',
     color: 'text-orange-600',
-    bgColor: 'bg-orange-50',
-    comingSoon: true
+    bgColor: 'bg-orange-50'
   }
 ]
 

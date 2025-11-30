@@ -13,9 +13,16 @@ import {
   useReactTable
 } from '@tanstack/react-table'
 import { ArrowUpDown, ChevronLeft, ChevronRight, X } from 'lucide-react'
+import * as XLSX from 'xlsx'
 
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger
+} from '@/components/ui/popover'
 import {
   Select,
   SelectContent,
@@ -148,6 +155,56 @@ export function RecaudacionTable({ data }: RecaudacionTableProps) {
     ],
     []
   )
+
+  // Opciones de exportación avanzada
+  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(
+    {
+      fecha: true,
+      playa_nombre: true,
+      playero_nombre: true,
+      tipo: true,
+      monto: true
+    }
+  )
+  const [useCurrentFiltersForExport, setUseCurrentFiltersForExport] =
+    useState(true)
+
+  const exportData = (opts?: { advanced?: boolean }) => {
+    const source =
+      opts?.advanced && !useCurrentFiltersForExport ? data : filteredData
+    const rows = source.map((row) => {
+      const out: Record<string, any> = {}
+      if (visibleColumns.fecha) {
+        out['Fecha'] = new Intl.DateTimeFormat('es-AR', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        }).format(new Date(row.fecha))
+      }
+      if (visibleColumns.playa_nombre) out['Playa'] = row.playa_nombre
+      if (visibleColumns.playero_nombre)
+        out['Playero'] = row.playero_nombre ?? '—'
+      if (visibleColumns.tipo) {
+        out['Tipo'] =
+          row.tipo === 'ABONO'
+            ? 'Abono'
+            : row.tipo === 'OCUPACION'
+              ? 'Ocupación'
+              : 'Otro'
+      }
+      if (visibleColumns.monto) {
+        out['Monto'] = row.monto
+      }
+      return out
+    })
+
+    const ws = XLSX.utils.json_to_sheet(rows)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Recaudación')
+    XLSX.writeFile(wb, 'recaudacion.xlsx')
+  }
 
   const table = useReactTable({
     data: filteredData,
@@ -307,6 +364,64 @@ export function RecaudacionTable({ data }: RecaudacionTableProps) {
         </div>
 
         <div className="flex items-center gap-6">
+          {/* Exportación */}
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => exportData()}>
+              Exportar (vista actual)
+            </Button>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline">Exportar avanzado</Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80">
+                <div className="space-y-3">
+                  <div className="text-sm font-medium">Columnas a exportar</div>
+                  {[
+                    { key: 'fecha', label: 'Fecha' },
+                    { key: 'playa_nombre', label: 'Playa' },
+                    { key: 'playero_nombre', label: 'Playero' },
+                    { key: 'tipo', label: 'Tipo' },
+                    { key: 'monto', label: 'Monto' }
+                  ].map((c) => (
+                    <label
+                      key={c.key}
+                      className="flex items-center gap-2 text-sm"
+                    >
+                      <Checkbox
+                        checked={visibleColumns[c.key]}
+                        onCheckedChange={(v) =>
+                          setVisibleColumns((prev) => ({
+                            ...prev,
+                            [c.key]: !!v
+                          }))
+                        }
+                      />
+                      {c.label}
+                    </label>
+                  ))}
+                  <div className="pt-2">
+                    <label className="flex items-center gap-2 text-sm">
+                      <Checkbox
+                        checked={useCurrentFiltersForExport}
+                        onCheckedChange={(v) =>
+                          setUseCurrentFiltersForExport(!!v)
+                        }
+                      />
+                      Usar filtros actuales
+                    </label>
+                  </div>
+                  <div className="flex justify-end gap-2 pt-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => exportData({ advanced: true })}
+                    >
+                      Exportar
+                    </Button>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
           <div className="flex items-center gap-2">
             <span className="text-muted-foreground text-sm">
               Filas por página

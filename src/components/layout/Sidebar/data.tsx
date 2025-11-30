@@ -39,6 +39,10 @@ export const general: SidebarItem[] = [
         url: '/admin/analytics/recaudacion'
       },
       {
+        title: 'Performance de Playeros',
+        url: '/admin/analytics/performance-playero'
+      },
+      {
         title: 'Abonos Vigentes',
         url: '/admin/reportes'
       },

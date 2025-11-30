@@ -172,6 +172,76 @@ async function obtenerPlayasYPlayeros() {
   }
 }
 
+async function limpiarDatosAnteriores() {
+  // Rango: últimos 30 días (mismo que el seed genera)
+  const fechaInicio = new Date()
+  fechaInicio.setDate(fechaInicio.getDate() - 30)
+  fechaInicio.setHours(0, 0, 0, 0)
+
+  const fechaFin = new Date()
+  fechaFin.setHours(23, 59, 59, 999)
+
+  const isoInicio = fechaInicio.toISOString()
+  const isoFin = fechaFin.toISOString()
+
+  // 1. Eliminar pagos en el rango (para evitar FKs)
+  const { error: errorPagos } = await supabase
+    .from('pago')
+    .delete()
+    .gte('fecha_hora_pago', isoInicio)
+    .lte('fecha_hora_pago', isoFin)
+
+  if (errorPagos) {
+    console.warn('   ⚠️  Error eliminando pagos:', errorPagos.message)
+  }
+
+  // 2. Eliminar ocupaciones finalizadas en el rango
+  const { error: errorOcupaciones } = await supabase
+    .from('ocupacion')
+    .delete()
+    .gte('hora_ingreso', isoInicio)
+    .lte('hora_ingreso', isoFin)
+
+  if (errorOcupaciones) {
+    console.warn(
+      '   ⚠️  Error eliminando ocupaciones:',
+      errorOcupaciones.message
+    )
+  }
+
+  // 3. Eliminar boletas y abonos (que referencian turnos en el rango)
+  const { error: errorBoletas } = await supabase
+    .from('boleta')
+    .delete()
+    .gte('fecha_generacion_boleta', fechaInicio.toISOString().split('T')[0])
+    .lte('fecha_generacion_boleta', fechaFin.toISOString().split('T')[0])
+
+  if (errorBoletas) {
+    console.warn('   ⚠️  Error eliminando boletas:', errorBoletas.message)
+  }
+
+  const { error: errorAbonos } = await supabase
+    .from('abono')
+    .delete()
+    .gte('fecha_hora_inicio', isoInicio)
+    .lte('fecha_hora_inicio', isoFin)
+
+  if (errorAbonos) {
+    console.warn('   ⚠️  Error eliminando abonos:', errorAbonos.message)
+  }
+
+  // 4. Eliminar turnos en el rango
+  const { error: errorTurnos } = await supabase
+    .from('turno')
+    .delete()
+    .gte('fecha_hora_ingreso', isoInicio)
+    .lte('fecha_hora_ingreso', isoFin)
+
+  if (errorTurnos) {
+    console.warn('   ⚠️  Error eliminando turnos:', errorTurnos.message)
+  }
+}
+
 async function main() {
   console.log('🌱 Iniciando seed de reportes de recaudación...\n')
 
@@ -186,6 +256,11 @@ async function main() {
 
   // Configurar el módulo de generación de datos
   setPlayasConfig(playas)
+
+  // 1.5 Limpiar datos previos del seed (últimos 30 días)
+  console.log('🧹 Limpiando datos anteriores del seed...')
+  await limpiarDatosAnteriores()
+  console.log('   ✅ Datos antiguos eliminados\n')
 
   // 2. Generar estructuras de datos
   console.log('📊 Generando datos de prueba...')
