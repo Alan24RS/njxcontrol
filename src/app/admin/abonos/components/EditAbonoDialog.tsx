@@ -5,8 +5,7 @@ import { useForm } from 'react-hook-form'
 
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery } from '@tanstack/react-query'
-import { AlertTriangle } from 'lucide-react'
-import { Info } from 'lucide-react'
+import { AlertTriangle, Info } from 'lucide-react'
 
 import { getAbonoByIdAction } from '@/app/admin/abonos/queries'
 import { Alert, AlertDescription } from '@/components/ui/alert'
