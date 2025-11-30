@@ -4,14 +4,25 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  LabelList,
   Legend,
   ResponsiveContainer,
-  Tooltip,
   XAxis,
   YAxis
 } from 'recharts'
 
 import type { RecaudacionDiariaRow } from '@/services/analytics/recaudacion/types'
+
+// Formatter para labels dentro de las barras
+const formatCurrency = (value: any) => {
+  const num = Number(value)
+  if (!num || num === 0) return ''
+  return new Intl.NumberFormat('es-AR', {
+    notation: 'compact',
+    compactDisplay: 'short',
+    maximumFractionDigits: 1
+  }).format(num)
+}
 
 interface RecaudacionChartProps {
   data: RecaudacionDiariaRow[]
@@ -156,13 +167,18 @@ export function RecaudacionChart({
 
   return (
     <div className="bg-card rounded-lg border p-4">
-      <h3 className="mb-4 text-lg font-semibold">
-        {days < 30
-          ? 'Recaudación Diaria por Tipo'
-          : days < 365
-            ? 'Recaudación Semanal por Tipo'
-            : 'Recaudación Mensual por Tipo'}
-      </h3>
+      <div className="mb-4">
+        <h3 className="text-lg font-semibold">
+          {days < 30
+            ? 'Evolución de Recaudación Diaria'
+            : days < 365
+              ? 'Evolución de Recaudación Semanal'
+              : 'Evolución de Recaudación Mensual'}
+        </h3>
+        <p className="text-muted-foreground text-sm">
+          Composición de ingresos por tipo de operación
+        </p>
+      </div>
       <ResponsiveContainer width="100%" height={400}>
         <BarChart
           data={chartData}
@@ -173,6 +189,16 @@ export function RecaudacionChart({
             dataKey="fecha"
             className="text-xs"
             tick={{ fill: 'hsl(var(--foreground))' }}
+            label={{
+              value: days < 30 ? 'Fecha' : days < 365 ? 'Semana' : 'Mes',
+              position: 'insideBottom',
+              offset: -5,
+              style: {
+                fontSize: 12,
+                fill: 'hsl(var(--muted-foreground))',
+                fontWeight: 500
+              }
+            }}
           />
           <YAxis
             className="text-xs"
@@ -183,39 +209,49 @@ export function RecaudacionChart({
                 compactDisplay: 'short'
               }).format(value)
             }
-          />
-          <Tooltip
-            contentStyle={{
-              backgroundColor: 'hsl(var(--card))',
-              border: '1px solid hsl(var(--border))',
-              borderRadius: '8px'
-            }}
-            labelFormatter={(label, payload) => {
-              if (payload && payload[0]) {
-                return payload[0].payload.fechaCompleta
+            label={{
+              value: 'Recaudación ($)',
+              angle: -90,
+              position: 'insideLeft',
+              style: {
+                fontSize: 12,
+                fill: 'hsl(var(--muted-foreground))',
+                fontWeight: 500,
+                textAnchor: 'middle'
               }
-              return label
             }}
-            formatter={(value: number) =>
-              new Intl.NumberFormat('es-AR', {
-                style: 'currency',
-                currency: 'ARS',
-                minimumFractionDigits: 0
-              }).format(value)
-            }
           />
           <Legend />
           <Bar
-            dataKey="Recaudación Total"
-            fill="hsl(217 91% 60%)"
-            radius={[8, 8, 0, 0]}
-          />
-          <Bar dataKey="Abonos" fill="hsl(142 76% 36%)" radius={[8, 8, 0, 0]} />
+            dataKey="Abonos"
+            stackId="stack"
+            fill="hsl(142 76% 36%)"
+            radius={[0, 0, 0, 0]}
+          >
+            <LabelList
+              dataKey="Abonos"
+              position="inside"
+              fill="white"
+              fontSize={12}
+              fontWeight="600"
+              formatter={formatCurrency}
+            />
+          </Bar>
           <Bar
             dataKey="Ocupaciones"
+            stackId="stack"
             fill="hsl(24 95% 53%)"
-            radius={[8, 8, 0, 0]}
-          />
+            radius={[4, 4, 0, 0]}
+          >
+            <LabelList
+              dataKey="Ocupaciones"
+              position="inside"
+              fill="white"
+              fontSize={12}
+              fontWeight="600"
+              formatter={formatCurrency}
+            />
+          </Bar>
         </BarChart>
       </ResponsiveContainer>
     </div>

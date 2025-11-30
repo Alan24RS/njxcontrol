@@ -13,7 +13,6 @@ import {
   useReactTable
 } from '@tanstack/react-table'
 import { ArrowUpDown, ChevronLeft, ChevronRight, X } from 'lucide-react'
-import * as XLSX from 'xlsx'
 
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -200,10 +199,34 @@ export function RecaudacionTable({ data }: RecaudacionTableProps) {
       return out
     })
 
-    const ws = XLSX.utils.json_to_sheet(rows)
-    const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, 'Recaudación')
-    XLSX.writeFile(wb, 'recaudacion.xlsx')
+    // Convertir a CSV
+    const headers = Object.keys(rows[0] || {})
+    const csvContent = [
+      headers.join(','),
+      ...rows.map((row) =>
+        headers
+          .map((header) => {
+            const value = row[header as keyof typeof row]
+            // Escapar valores con comas o comillas
+            if (
+              typeof value === 'string' &&
+              (value.includes(',') || value.includes('"'))
+            ) {
+              return `"${value.replace(/"/g, '""')}"`
+            }
+            return value
+          })
+          .join(',')
+      )
+    ].join('\n')
+
+    // Descargar archivo CSV
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = 'recaudacion.csv'
+    link.click()
+    URL.revokeObjectURL(link.href)
   }
 
   const table = useReactTable({
