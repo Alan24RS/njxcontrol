@@ -153,6 +153,30 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
 
+      - name: 📊 Run analytics reports seed
+        if: steps.migration-check.outputs.has-migrations == 'true' && github.ref == 'refs/heads/main'
+        continue-on-error: true
+        run: |
+          echo "📊 Running analytics reports seed..."
+
+          # Install dependencies if needed
+          pnpm install --frozen-lockfile || {
+            echo "⚠️ Failed to install dependencies, skipping seed"
+            exit 0
+          }
+
+          # Run the reports seed
+          node --import tsx scripts/seed-recaudacion-reportes.ts || {
+            echo "⚠️ Reports seed failed, but continuing deployment"
+            exit 0
+          }
+
+          echo "✅ Reports seed completed successfully"
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          CI: true
+
       - name: 🔄 Revalidate Vercel cache
         if: steps.migration-check.outputs.has-migrations == 'true'
         run: |
