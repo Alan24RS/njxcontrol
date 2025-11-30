@@ -30,6 +30,7 @@ export type AbonoVigente = {
   playaNombre: string
   plazaId: string
   fechaHoraInicio: Date
+  fechaVencimiento: Date | null
   precioMensual: number
   estado: 'ACTIVO' | 'FINALIZADO' | 'SUSPENDIDO'
   plazaIdentificador: string
@@ -97,6 +98,12 @@ export type DeudaPorPatente = {
   abonadoId: number
   deudaTotal: number
   boletasVencidas: number
+}
+
+export type GetAbonosVigentesParams = {
+  playaId?: string
+  sortBy?: string
+  sortOrder?: 'asc' | 'desc'
 }
 
 export type FinalizarAbonoResponse = {

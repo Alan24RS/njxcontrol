@@ -11,9 +11,15 @@ import {
 import type { ApiResponse } from '@/types/api'
 
 export async function getAbonosVigentesAction(
-  playaId?: string
+  playaId?: string,
+  sortBy?: string,
+  sortOrder?: 'asc' | 'desc'
 ): Promise<ApiResponse<AbonoVigente[]>> {
-  const result = await getAbonosVigentes(playaId)
+  const result = await getAbonosVigentes({
+    playaId,
+    sortBy,
+    sortOrder
+  })
   return {
     data: result.data || null,
     error: result.error || null

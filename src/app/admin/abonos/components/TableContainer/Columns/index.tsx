@@ -4,6 +4,7 @@ import { ColumnDef } from '@tanstack/react-table'
 
 import { ActionColumnButton, StatusBadge } from '@/components/ui'
 import { CellLink, SimpleHeader } from '@/components/ui/DataTable'
+import SortHeader from '@/components/ui/DataTable/SortHeader'
 import { TIPO_VEHICULO_LABEL } from '@/constants/tipoVehiculo'
 
 import type { TableData } from '..'
@@ -24,6 +25,8 @@ export const labels = {
   tipoPlaza: 'Tipo Plaza',
   vehiculos: 'Vehículos',
   estado: 'Estado',
+  fechaInicio: 'Inicio',
+  fechaVencimiento: 'Vencimiento',
   precioMensual: 'Precio mensual',
   actions: 'Acciones'
 }
@@ -32,10 +35,14 @@ export default function getColumns(): ColumnDef<TableDataType>[] {
   return [
     {
       accessorKey: 'abonado',
-      id: 'abonado',
+      id: 'cliente',
       meta: labels.abonado,
       enableHiding: false,
-      header: () => <SimpleHeader>{labels.abonado}</SimpleHeader>,
+      header: () => (
+        <SortHeader id="cliente" type="string">
+          {labels.abonado}
+        </SortHeader>
+      ),
       cell: ({ row }) => {
         return (
           <CellLink href={getHref(row.original)} className="justify-start">
@@ -119,13 +126,57 @@ export default function getColumns(): ColumnDef<TableDataType>[] {
       meta: labels.estado,
       enableHiding: false,
       header: () => (
-        <SimpleHeader className="justify-center">{labels.estado}</SimpleHeader>
+        <SortHeader id="estado" type="string" className="justify-center">
+          {labels.estado}
+        </SortHeader>
       ),
       cell: ({ row }) => (
         <CellLink href={getHref(row.original)} className="justify-center">
           <StatusBadge
             status={row.original.tieneDeuda ? 'Con deuda' : 'Al día'}
           />
+        </CellLink>
+      )
+    },
+    {
+      accessorKey: 'fechaInicio',
+      id: 'fecha_inicio',
+      meta: labels.fechaInicio,
+      enableHiding: true,
+      header: () => (
+        <SortHeader id="fecha_inicio" type="string" className="justify-center">
+          {labels.fechaInicio}
+        </SortHeader>
+      ),
+      cell: ({ row }) => (
+        <CellLink href={getHref(row.original)} className="justify-center">
+          {row.original.fechaHoraInicio.toLocaleDateString('es-AR', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+          })}
+        </CellLink>
+      )
+    },
+    {
+      accessorKey: 'fechaVencimiento',
+      id: 'vencimiento',
+      meta: labels.fechaVencimiento,
+      enableHiding: true,
+      header: () => (
+        <SortHeader id="vencimiento" type="string" className="justify-center">
+          {labels.fechaVencimiento}
+        </SortHeader>
+      ),
+      cell: ({ row }) => (
+        <CellLink href={getHref(row.original)} className="justify-center">
+          {row.original.fechaVencimiento
+            ? row.original.fechaVencimiento.toLocaleDateString('es-AR', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+              })
+            : '-'}
         </CellLink>
       )
     },
