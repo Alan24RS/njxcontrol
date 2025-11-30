@@ -25,6 +25,7 @@ interface CustomMapProps extends MapProps {
     longitude: number
   }
   gestureHandling?: 'cooperative' | 'greedy' | 'none' | 'auto'
+  initialZoom?: number
 }
 
 const DEFAULT_CENTER = { lat: -34.603722, lng: -58.381557 }
@@ -35,12 +36,12 @@ export default function Map({
   showUserLocation = false,
   userLocation,
   gestureHandling = 'cooperative',
+  initialZoom = 12,
   ...props
 }: CustomMapProps) {
   const [mapCenter, setMapCenter] = useState<MapCenter>(DEFAULT_CENTER)
   const [forceCenter, setForceCenter] = useState<MapCenter | null>(null)
   const [lastCenter, setLastCenter] = useState<MapCenter | null>(null)
-  const [initialZoom, _setInitialZoom] = useState<number>(16)
   const [forceZoom, setForceZoom] = useState<number | null>(null)
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
   const mapId = process.env.NEXT_PUBLIC_GOOGLE_MAPS_ID
