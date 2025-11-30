@@ -6,6 +6,7 @@ import { ActionColumnButton, StatusBadge } from '@/components/ui'
 import { CellLink, SimpleHeader } from '@/components/ui/DataTable'
 import { TIPO_VEHICULO_LABEL } from '@/constants/tipoVehiculo'
 
+import { EditButton } from '../../../../components/TableContainer/Columns/EditButton'
 import type { TableData } from '..'
 
 import { FinalizarButton } from './FinalizarButton'
@@ -148,6 +149,11 @@ export default function getColumns(): ColumnDef<TableDataType>[] {
               icon="view"
               tooltip="Ver boletas"
               href={boletasUrl}
+            />
+            <EditButton
+              playaId={row.original.playaId}
+              plazaId={row.original.plazaId}
+              fechaHoraInicio={row.original.fechaHoraInicio.toISOString()}
             />
             <FinalizarButton
               playaId={row.original.playaId}

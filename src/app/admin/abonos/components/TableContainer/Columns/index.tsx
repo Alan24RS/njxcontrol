@@ -8,6 +8,7 @@ import { TIPO_VEHICULO_LABEL } from '@/constants/tipoVehiculo'
 
 import type { TableData } from '..'
 
+import { EditButton } from './EditButton'
 import { FinalizarButton } from './FinalizarButton'
 
 export const getHref = (row: TableDataType) =>
@@ -161,6 +162,11 @@ export default function getColumns(): ColumnDef<TableDataType>[] {
               icon="view"
               tooltip="Ver boletas"
               href={boletasUrl}
+            />
+            <EditButton
+              playaId={row.original.playaId}
+              plazaId={row.original.plazaId}
+              fechaHoraInicio={row.original.fechaHoraInicio.toISOString()}
             />
             <FinalizarButton
               playaId={row.original.playaId}

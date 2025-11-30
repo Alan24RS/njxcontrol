@@ -1,8 +1,10 @@
 'use server'
 
 import {
+  type AbonoDetails,
   type AbonoVigente,
   type Boleta,
+  getAbonoById,
   getAbonosVigentes,
   getBoletasByAbono
 } from '@/services/abonos'
@@ -28,4 +30,12 @@ export async function getBoletasByAbonoAction(
     data: result.data || null,
     error: result.error || null
   }
+}
+
+export async function getAbonoByIdAction(
+  playaId: string,
+  plazaId: string,
+  fechaHoraInicio: string
+): Promise<ApiResponse<AbonoDetails | null>> {
+  return await getAbonoById(playaId, plazaId, fechaHoraInicio)
 }

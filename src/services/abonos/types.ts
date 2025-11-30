@@ -202,3 +202,46 @@ export type CreateAbonoResponse = {
     monto: number
   }
 }
+
+export type UpdateAbonoParams = {
+  playaId: string
+  plazaId: string
+  fechaHoraInicio: string
+  nuevaPatente?: string | null
+  nuevoTipoVehiculo?: 'AUTOMOVIL' | 'MOTOCICLETA' | 'CAMIONETA' | null
+  nuevaPlazaId?: string | null
+  observaciones?: string | null
+}
+
+export type UpdateAbonoResponse = {
+  success: boolean
+  abono_id: {
+    playa_id: string
+    plaza_id: string
+    fecha_hora_inicio: string
+  }
+  mensaje: string
+  precio_mensual_anterior?: number | null
+  precio_mensual_nuevo?: number | null
+}
+
+export type AbonoDetails = {
+  playaId: string
+  plazaId: string
+  fechaHoraInicio: Date
+  fechaFin: Date | null
+  precioMensual: number
+  estado: 'ACTIVO' | 'FINALIZADO' | 'SUSPENDIDO'
+  plazaIdentificador: string
+  tipoPlazaNombre: string
+  abonadoNombre: string
+  abonadoApellido: string
+  abonadoDni: string
+  vehiculos: Array<{
+    patente: string
+    tipoVehiculo: string
+  }>
+  totalPagado: number
+  saldoPendiente: number
+  observaciones: string | null
+}

@@ -80,3 +80,50 @@ export const createAbonoConVehiculosSchema = z.object({
     )
     .min(1, 'Agrega al menos un vehículo')
 })
+
+export const updateAbonoSchema = z
+  .object({
+    playaId: z.string().uuid('ID de playa inválido'),
+    plazaId: z.string().uuid('ID de plaza inválido'),
+    fechaHoraInicio: z.string().min(1, 'Fecha de inicio es obligatoria'),
+    nuevaPatente: z
+      .string()
+      .regex(
+        /^(?:[A-Z]{3}[0-9]{3}|[A-Z]{2}[0-9]{3}[A-Z]{2})$/,
+        'Formato de patente inválido (ej: ABC123 o AB123CD)'
+      )
+      .optional()
+      .nullable()
+      .or(z.literal('')),
+    nuevoTipoVehiculo: z
+      .enum(['AUTOMOVIL', 'MOTOCICLETA', 'CAMIONETA'], {
+        message: 'Tipo de vehículo inválido'
+      })
+      .optional()
+      .nullable(),
+    nuevaPlazaId: z.string().uuid('ID de plaza inválido').optional().nullable(),
+    observaciones: z
+      .string()
+      .max(500, 'Las observaciones no pueden exceder 500 caracteres')
+      .optional()
+      .nullable()
+      .or(z.literal(''))
+  })
+  .refine(
+    (data) => {
+      if (
+        data.nuevaPatente &&
+        data.nuevaPatente !== '' &&
+        !data.nuevoTipoVehiculo
+      ) {
+        return false
+      }
+      return true
+    },
+    {
+      message: 'Para cambiar la patente debe indicar el tipo de vehículo',
+      path: ['nuevoTipoVehiculo']
+    }
+  )
+
+export type UpdateAbonoFormData = z.infer<typeof updateAbonoSchema>
