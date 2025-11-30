@@ -2,10 +2,17 @@ import { AdvancedMarker, AdvancedMarkerProps } from '@vis.gl/react-google-maps'
 
 import LogoMarker from '@/assets/institutional/LogoMarker'
 
-export default function PlayaMarker(props: AdvancedMarkerProps) {
+interface PlayaMarkerProps extends AdvancedMarkerProps {
+  children?: React.ReactNode
+}
+
+export default function PlayaMarker({ children, ...props }: PlayaMarkerProps) {
   return (
     <AdvancedMarker {...props}>
-      <LogoMarker className="size-12" />
+      <div className="relative">
+        <LogoMarker className="size-12" />
+        {children}
+      </div>
     </AdvancedMarker>
   )
 }
