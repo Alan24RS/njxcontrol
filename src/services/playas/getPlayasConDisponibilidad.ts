@@ -2,8 +2,9 @@
 
 import { unstable_cache } from 'next/cache'
 
+import { createClient } from '@supabase/supabase-js'
+
 import { CACHE_TAGS, CACHE_TIMES } from '@/constants/cache'
-import { createCachedClient } from '@/lib/supabase/cached-server'
 import { ApiResponse } from '@/types/api'
 import { translateDBError } from '@/utils/errorMessages'
 
@@ -21,7 +22,11 @@ export async function getPlayasConDisponibilidad(): Promise<
 > {
   return unstable_cache(
     async (): Promise<ApiResponse<PlayaConDisponibilidad[]>> => {
-      const supabase = createCachedClient()
+      // Usar cliente público sin autenticación para datos públicos
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      )
 
       // Consultar la vista v_playas_disponibilidad que calcula disponibilidad en tiempo real
       const { data, error } = await supabase
@@ -30,7 +35,14 @@ export async function getPlayasConDisponibilidad(): Promise<
         .order('playa_nombre', { ascending: true })
         .order('tipo_plaza_nombre', { ascending: true })
 
+      console.log(
+        '🔍 Service - raw data from DB:',
+        JSON.stringify(data, null, 2)
+      )
+      console.log('🔍 Service - error:', error)
+
       if (error) {
+        console.error('❌ Service - DB error:', error)
         return {
           data: [],
           error: translateDBError(error.message)
@@ -40,6 +52,11 @@ export async function getPlayasConDisponibilidad(): Promise<
       // Transformar datos: agrupar por playa y consolidar disponibilidad por tipo
       const playasConDisponibilidad = transformPlayaConDisponibilidad(
         data as unknown as RawPlayaConDisponibilidad[]
+      )
+
+      console.log(
+        '🔍 Service - transformed data:',
+        JSON.stringify(playasConDisponibilidad, null, 2)
       )
 
       return {

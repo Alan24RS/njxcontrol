@@ -35,7 +35,7 @@ export default function MapaContainer() {
     isError,
     location
   } = useGeolocation({
-    askGeolocation: true
+    askGeolocation: false // Cambiado a false para no pedir ubicación automáticamente
   })
 
   const {
@@ -46,6 +46,32 @@ export default function MapaContainer() {
 
   const playas = playasData?.data || []
   const isLoading = isLoadingLocation || isLoadingPlayas
+
+  // Debug: log para verificar datos
+  console.log('🔍 MapaContainer - playasData:', playasData)
+  console.log('🔍 MapaContainer - playas:', playas)
+  console.log('🔍 MapaContainer - isLoadingPlayas:', isLoadingPlayas)
+  console.log('🔍 MapaContainer - playasError:', playasError)
+
+  // Calcular el centro y zoom óptimo para mostrar todas las playas
+  const mapCenter = location
+    ? { lat: location.latitude, lng: location.longitude }
+    : playas.length > 0
+      ? {
+          lat:
+            playas.reduce((sum, p) => sum + (p.latitud || 0), 0) /
+            playas.length,
+          lng:
+            playas.reduce((sum, p) => sum + (p.longitud || 0), 0) /
+            playas.length
+        }
+      : undefined
+
+  // Zoom más alejado cuando no hay ubicación del usuario
+  const mapZoom = location ? 15 : 12
+
+  console.log('🔍 MapaContainer - mapCenter:', mapCenter)
+  console.log('🔍 MapaContainer - mapZoom:', mapZoom)
 
   if (playasError) {
     throw playasError
@@ -81,31 +107,52 @@ export default function MapaContainer() {
           gestureHandling="greedy"
           colorScheme={isDark ? ColorScheme.DARK : ColorScheme.LIGHT}
           userLocation={location}
+          center={mapCenter}
+          initialZoom={mapZoom}
           onClick={() => {
             if (markerClickedRef.current) return
             if (selectedPlaya) setSelectedPlaya(null)
           }}
         >
-          {playas.map((playa) => (
-            <PlayaMarker
-              key={playa.id}
-              position={{ lat: playa.latitud!, lng: playa.longitud! }}
-              title={playa.direccion}
-              onClick={() => {
-                markerClickedRef.current = true
-                setSelectedPlaya(playa)
-                setTimeout(() => {
-                  markerClickedRef.current = false
-                }, 100)
-              }}
-            >
-              <DisponibilidadBadge
-                disponibilidad={playa.disponibilidadPorTipo}
-                totalDisponibles={playa.totalDisponibles}
-                className="absolute -top-2 -right-2"
-              />
-            </PlayaMarker>
-          ))}
+          {console.log(
+            '🔍 MapaContainer - Rendering markers for playas:',
+            playas.length
+          )}
+          {playas.map((playa) => {
+            console.log('🔍 MapaContainer - Rendering playa:', {
+              id: playa.id,
+              nombre: playa.nombre,
+              latitud: playa.latitud,
+              longitud: playa.longitud,
+              hasLatLng: !!(playa.latitud && playa.longitud)
+            })
+
+            if (!playa.latitud || !playa.longitud) {
+              console.warn('⚠️ Playa sin coordenadas:', playa.nombre)
+              return null
+            }
+
+            return (
+              <PlayaMarker
+                key={playa.id}
+                position={{ lat: playa.latitud, lng: playa.longitud }}
+                title={playa.direccion}
+                onClick={() => {
+                  markerClickedRef.current = true
+                  setSelectedPlaya(playa)
+                  setTimeout(() => {
+                    markerClickedRef.current = false
+                  }, 100)
+                }}
+              >
+                <DisponibilidadBadge
+                  disponibilidad={playa.disponibilidadPorTipo}
+                  totalDisponibles={playa.totalDisponibles}
+                  className="absolute -top-2 -right-2"
+                />
+              </PlayaMarker>
+            )
+          })}
 
           {selectedPlaya && (
             <InfoWindow

@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query'
 
-import { getPlayasConDisponibilidad } from '@/services/playas'
+import { getPlayasConDisponibilidadAction } from '@/app/mapa/actions'
 import type {
   ApiResponse,
   PlayaConDisponibilidad
@@ -12,7 +12,7 @@ export function useGetPlayasConDisponibilidad() {
   return useQuery<ApiResponse<PlayaConDisponibilidad[]>>({
     queryKey: ['playas-con-disponibilidad'],
     queryFn: async () => {
-      return await getPlayasConDisponibilidad()
+      return await getPlayasConDisponibilidadAction()
     },
     staleTime: 3 * 60 * 1000, // 3 minutos
     refetchInterval: 3 * 60 * 1000, // Refrescar cada 3 minutos

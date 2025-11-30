@@ -91,6 +91,93 @@ GRANT SELECT ON TABLE v_playas_disponibilidad TO anon;
 GRANT SELECT ON TABLE v_playas_disponibilidad TO authenticated;
 GRANT ALL ON TABLE v_playas_disponibilidad TO service_role;
 
+-- Habilitar acceso público a las tablas base necesarias para la vista
+-- (La disponibilidad de plazas es información pública)
+
+-- Permitir SELECT público en la tabla playa (solo playas activas)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE tablename = 'playa' AND policyname = 'playa_select_public'
+  ) THEN
+    CREATE POLICY playa_select_public ON playa
+      FOR SELECT
+      TO anon, authenticated
+      USING (estado = 'ACTIVO' AND fecha_eliminacion IS NULL);
+  END IF;
+END $$;
+
+-- Permitir SELECT público en la tabla tipo_plaza
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE tablename = 'tipo_plaza' AND policyname = 'tipo_plaza_select_public'
+  ) THEN
+    CREATE POLICY tipo_plaza_select_public ON tipo_plaza
+      FOR SELECT
+      TO anon, authenticated
+      USING (fecha_eliminacion IS NULL);
+  END IF;
+END $$;
+
+-- Permitir SELECT público en la tabla plaza
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE tablename = 'plaza' AND policyname = 'plaza_select_public'
+  ) THEN
+    CREATE POLICY plaza_select_public ON plaza
+      FOR SELECT
+      TO anon, authenticated
+      USING (fecha_eliminacion IS NULL);
+  END IF;
+END $$;
+
+-- Permitir SELECT público en la tabla ciudad
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE tablename = 'ciudad' AND policyname = 'ciudad_select_public'
+  ) THEN
+    CREATE POLICY ciudad_select_public ON ciudad
+      FOR SELECT
+      TO anon, authenticated
+      USING (true);
+  END IF;
+END $$;
+
+-- Permitir SELECT público en la tabla ocupacion (necesaria para calcular disponibilidad)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE tablename = 'ocupacion' AND policyname = 'ocupacion_select_public'
+  ) THEN
+    CREATE POLICY ocupacion_select_public ON ocupacion
+      FOR SELECT
+      TO anon, authenticated
+      USING (true);
+  END IF;
+END $$;
+
+-- Permitir SELECT público en la tabla abono (necesaria para calcular disponibilidad)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE tablename = 'abono' AND policyname = 'abono_select_public'
+  ) THEN
+    CREATE POLICY abono_select_public ON abono
+      FOR SELECT
+      TO anon, authenticated
+      USING (true);
+  END IF;
+END $$;
+
 -- Crear índices en las tablas base para optimizar las consultas
 -- (si no existen ya)
 
@@ -103,7 +190,7 @@ BEGIN
   ) THEN
     CREATE INDEX idx_ocupacion_plaza_activa 
     ON ocupacion(plaza_id, playa_id, estado) 
-    WHERE estado = 'ACTIVA';
+    WHERE estado = 'ACTIVO';
   END IF;
 
   -- Índice para búsquedas de abonos vigentes por plaza
