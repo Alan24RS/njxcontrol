@@ -114,10 +114,6 @@ export default function MapaContainer() {
             if (selectedPlaya) setSelectedPlaya(null)
           }}
         >
-          {console.log(
-            '🔍 MapaContainer - Rendering markers for playas:',
-            playas.length
-          )}
           {playas.map((playa: PlayaConDisponibilidad) => {
             console.log('🔍 MapaContainer - Rendering playa:', {
               id: playa.id,
