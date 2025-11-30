@@ -16,7 +16,7 @@ export type RawPerformancePlayeroTimelineRow = {
  * Transformed row for client usage
  */
 export type PerformancePlayeroTimelineRow = {
-  fecha: Date
+  fecha: Date | null
   totalTurnos: number
   totalHorasTrabajadas: number
   ocupacionesCerradas: number

@@ -33,15 +33,17 @@ export function PerformancePlayeroChart({
     )
   }
 
-  const chartData = data.map((row) => ({
-    fecha: new Intl.DateTimeFormat('es-AR', {
-      day: '2-digit',
-      month: 'short'
-    }).format(row.fecha),
-    horas: row.totalHorasTrabajadas,
-    ocupaciones: row.ocupacionesCerradas,
-    recaudacion: row.volumenRecaudado
-  }))
+  const chartData = data
+    .filter((row) => row.fecha !== null)
+    .map((row) => ({
+      fecha: new Intl.DateTimeFormat('es-AR', {
+        day: '2-digit',
+        month: 'short'
+      }).format(row.fecha!),
+      horas: row.totalHorasTrabajadas,
+      ocupaciones: row.ocupacionesCerradas,
+      recaudacion: row.volumenRecaudado
+    }))
 
   return (
     <div className="bg-card rounded-lg border p-4">

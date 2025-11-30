@@ -49,10 +49,10 @@ export function transformPerformancePlayeroTimeline(
 ): PerformancePlayeroTimelineRow | null {
   if (!raw) return null
 
-  let fechaValida: Date | null = null
+  let fechaValida: Date = new Date(0)
   if (raw.fecha) {
     const d = new Date(raw.fecha)
-    fechaValida = isNaN(d.getTime()) ? null : d
+    fechaValida = isNaN(d.getTime()) ? new Date(0) : d
   }
   return {
     fecha: fechaValida,
