@@ -3,10 +3,8 @@
 import { useQuery } from '@tanstack/react-query'
 
 import { getPlayasConDisponibilidadAction } from '@/app/mapa/actions'
-import type {
-  ApiResponse,
-  PlayaConDisponibilidad
-} from '@/services/playas/types'
+import type { PlayaConDisponibilidad } from '@/services/playas/types'
+import type { ApiResponse } from '@/types/api'
 
 export function useGetPlayasConDisponibilidad() {
   return useQuery<ApiResponse<PlayaConDisponibilidad[]>>({

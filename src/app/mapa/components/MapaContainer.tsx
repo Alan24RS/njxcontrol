@@ -59,10 +59,10 @@ export default function MapaContainer() {
     : playas.length > 0
       ? {
           lat:
-            playas.reduce((sum, p) => sum + (p.latitud || 0), 0) /
+            playas.reduce((sum: number, p) => sum + (p.latitud || 0), 0) /
             playas.length,
           lng:
-            playas.reduce((sum, p) => sum + (p.longitud || 0), 0) /
+            playas.reduce((sum: number, p) => sum + (p.longitud || 0), 0) /
             playas.length
         }
       : undefined
@@ -118,7 +118,7 @@ export default function MapaContainer() {
             '🔍 MapaContainer - Rendering markers for playas:',
             playas.length
           )}
-          {playas.map((playa) => {
+          {playas.map((playa: PlayaConDisponibilidad) => {
             console.log('🔍 MapaContainer - Rendering playa:', {
               id: playa.id,
               nombre: playa.nombre,
@@ -222,7 +222,7 @@ export default function MapaContainer() {
                 Playas disponibles ({playas.length})
               </h2>
               <div className="space-y-3">
-                {playas.map((playa) => (
+                {playas.map((playa: PlayaConDisponibilidad) => (
                   <Card
                     key={playa.id}
                     className={`hover:bg-muted/50 cursor-pointer transition-colors ${
