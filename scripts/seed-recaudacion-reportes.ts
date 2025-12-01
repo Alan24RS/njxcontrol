@@ -7,8 +7,14 @@
  * - Ocupaciones finalizadas con pagos
  * - Abonos con pagos iniciales
  *
- * IMPORTANTE: Este script incluye limpieza automática de datos previos
- * para evitar duplicados en cada ejecución/despliegue.
+ * LIMPIEZA AUTOMÁTICA (Estrategia por patrones únicos):
+ * - Elimina TODOS los datos de seed anteriores antes de generar nuevos
+ * - Identificación por patrones en lugar de rangos de fecha:
+ *   · Ocupaciones: patentes AAA*, BBB*
+ *   · Abonos: emails abonado*@test.com
+ *   · Turnos: últimos 56 días cerrados
+ *   · Vehículos: patentes de seed huérfanas
+ * - Garantiza limpieza completa sin importar antigüedad de datos
  *
  * PREREQUISITOS:
  * - Ejecutar primero db-seed.ts para crear la estructura base
@@ -178,86 +184,138 @@ async function obtenerPlayasYPlayeros() {
 async function limpiarDatosAnteriores() {
   console.log('🧹 Limpiando datos de reportes anteriores...')
 
-  // Rango: últimos 35 días (más margen que los 30 del seed)
-  const fechaInicio = new Date()
-  fechaInicio.setDate(fechaInicio.getDate() - 35)
-  fechaInicio.setHours(0, 0, 0, 0)
-
-  const fechaFin = new Date()
-  fechaFin.setHours(23, 59, 59, 999)
-
-  const isoInicio = fechaInicio.toISOString()
-  const isoFin = fechaFin.toISOString()
-
   try {
-    // 1. Eliminar pagos en el rango (para evitar FKs)
-    const { count: countPagos } = await supabase
-      .from('pago')
-      .delete({ count: 'exact' })
-      .gte('fecha_hora_pago', isoInicio)
-      .lte('fecha_hora_pago', isoFin)
+    // ESTRATEGIA: Identificar datos de seed por patrones únicos
+    // Las patentes de seed tienen prefijos específicos: AAA*, BBA*, BBM*
+    // Los abonados de seed tienen emails con patrón: abonado*@test.com
 
-    console.log(`   🗑️  Pagos eliminados: ${countPagos || 0}`)
+    // 1. Obtener ocupaciones de seed (por patente)
+    const { data: ocupacionesSeed } = await supabase
+      .from('ocupacion')
+      .select('ocupacion_id, playa_id, plaza_id')
+      .or('patente.like.AAA%,patente.like.BBB%')
 
-    // 2. Eliminar boletas en el rango
-    const { count: countBoletas } = await supabase
-      .from('boleta')
-      .delete({ count: 'exact' })
-      .gte('fecha_generacion_boleta', fechaInicio.toISOString().split('T')[0])
-      .lte('fecha_generacion_boleta', fechaFin.toISOString().split('T')[0])
+    let countPagos = 0
+    let countOcupaciones = 0
 
-    console.log(`   🗑️  Boletas eliminadas: ${countBoletas || 0}`)
+    if (ocupacionesSeed && ocupacionesSeed.length > 0) {
+      // Eliminar pagos de estas ocupaciones
+      const ocupacionIds = ocupacionesSeed.map((o) => o.ocupacion_id)
 
-    // 3. Eliminar abono_vehiculo vinculados a abonos en el rango
-    // Primero obtener los abonos del rango para eliminar solo sus vehículos
-    const { data: abonosRango } = await supabase
-      .from('abono')
-      .select('playa_id, plaza_id, fecha_hora_inicio')
-      .gte('fecha_hora_inicio', isoInicio)
-      .lte('fecha_hora_inicio', isoFin)
-
-    let countAbonoVeh = 0
-    if (abonosRango && abonosRango.length > 0) {
-      for (const abono of abonosRango) {
+      // Eliminar en lotes de 100 para evitar timeouts
+      for (let i = 0; i < ocupacionIds.length; i += 100) {
+        const batch = ocupacionIds.slice(i, i + 100)
         const { count } = await supabase
-          .from('abono_vehiculo')
+          .from('pago')
           .delete({ count: 'exact' })
-          .eq('playa_id', abono.playa_id)
-          .eq('plaza_id', abono.plaza_id)
-          .eq('fecha_hora_inicio', abono.fecha_hora_inicio)
+          .in('ocupacion_id', batch)
 
-        countAbonoVeh += count || 0
+        countPagos += count || 0
+      }
+
+      // Eliminar las ocupaciones
+      for (let i = 0; i < ocupacionIds.length; i += 100) {
+        const batch = ocupacionIds.slice(i, i + 100)
+        const { count } = await supabase
+          .from('ocupacion')
+          .delete({ count: 'exact' })
+          .in('ocupacion_id', batch)
+
+        countOcupaciones += count || 0
       }
     }
 
+    console.log(`   🗑️  Pagos eliminados: ${countPagos}`)
+    console.log(`   🗑️  Ocupaciones eliminadas: ${countOcupaciones}`)
+
+    // 2. Obtener abonados de seed (por email)
+    const { data: abonadosSeed } = await supabase
+      .from('abonado')
+      .select('abonado_id')
+      .like('email', '%@test.com')
+      .like('email', 'abonado%')
+
+    let countBoletas = 0
+    let countAbonoVeh = 0
+    let countAbonos = 0
+
+    if (abonadosSeed && abonadosSeed.length > 0) {
+      const abonadoIds = abonadosSeed.map((a) => a.abonado_id)
+
+      // Obtener abonos de estos abonados
+      const { data: abonosSeed } = await supabase
+        .from('abono')
+        .select('playa_id, plaza_id, fecha_hora_inicio')
+        .in('abonado_id', abonadoIds)
+
+      if (abonosSeed && abonosSeed.length > 0) {
+        // Eliminar boletas de estos abonos
+        for (const abono of abonosSeed) {
+          const { count: cBoletas } = await supabase
+            .from('boleta')
+            .delete({ count: 'exact' })
+            .eq('playa_id', abono.playa_id)
+            .eq('plaza_id', abono.plaza_id)
+            .eq('fecha_hora_inicio_abono', abono.fecha_hora_inicio)
+
+          countBoletas += cBoletas || 0
+
+          // Eliminar abono_vehiculo
+          const { count: cAbonoVeh } = await supabase
+            .from('abono_vehiculo')
+            .delete({ count: 'exact' })
+            .eq('playa_id', abono.playa_id)
+            .eq('plaza_id', abono.plaza_id)
+            .eq('fecha_hora_inicio', abono.fecha_hora_inicio)
+
+          countAbonoVeh += cAbonoVeh || 0
+        }
+
+        // Eliminar abonos en lotes
+        for (let i = 0; i < abonosSeed.length; i += 100) {
+          const batch = abonosSeed.slice(i, i + 100)
+          const { count } = await supabase
+            .from('abono')
+            .delete({ count: 'exact' })
+            .or(
+              batch
+                .map(
+                  (a) =>
+                    `and(playa_id.eq.${a.playa_id},plaza_id.eq.${a.plaza_id},fecha_hora_inicio.eq.${a.fecha_hora_inicio})`
+                )
+                .join(',')
+            )
+
+          countAbonos += count || 0
+        }
+      }
+    }
+
+    console.log(`   🗑️  Boletas eliminadas: ${countBoletas}`)
     console.log(`   🗑️  Abono-vehículos eliminados: ${countAbonoVeh}`)
+    console.log(`   🗑️  Abonos eliminados: ${countAbonos}`)
 
-    // 4. Eliminar abonos en el rango
-    const { count: countAbonos } = await supabase
-      .from('abono')
-      .delete({ count: 'exact' })
-      .gte('fecha_hora_inicio', isoInicio)
-      .lte('fecha_hora_inicio', isoFin)
+    // 3. Eliminar turnos de seed (los que tienen ocupaciones/abonos de seed)
+    // Buscar turnos en las últimas 8 semanas (máximo histórico razonable para seed)
+    const fechaLimite = new Date()
+    fechaLimite.setDate(fechaLimite.getDate() - 56) // 8 semanas
 
-    console.log(`   🗑️  Abonos eliminados: ${countAbonos || 0}`)
-
-    // 5. Eliminar ocupaciones en el rango
-    const { count: countOcupaciones } = await supabase
-      .from('ocupacion')
-      .delete({ count: 'exact' })
-      .gte('hora_ingreso', isoInicio)
-      .lte('hora_ingreso', isoFin)
-
-    console.log(`   🗑️  Ocupaciones eliminadas: ${countOcupaciones || 0}`)
-
-    // 6. Eliminar turnos en el rango
     const { count: countTurnos } = await supabase
       .from('turno')
       .delete({ count: 'exact' })
-      .gte('fecha_hora_ingreso', isoInicio)
-      .lte('fecha_hora_ingreso', isoFin)
+      .gte('fecha_hora_ingreso', fechaLimite.toISOString())
+      .not('fecha_hora_salida', 'is', null) // Solo turnos cerrados
 
     console.log(`   🗑️  Turnos eliminados: ${countTurnos || 0}`)
+
+    // 4. Limpiar vehículos huérfanos de seed (opcional)
+    const { count: countVehiculos } = await supabase
+      .from('vehiculo')
+      .delete({ count: 'exact' })
+      .or('patente.like.AAA%,patente.like.BBA%,patente.like.BBM%')
+
+    console.log(`   🗑️  Vehículos de seed eliminados: ${countVehiculos || 0}`)
+
     console.log('   ✅ Limpieza completada')
   } catch (error: any) {
     console.warn('   ⚠️  Error durante limpieza:', error?.message)
