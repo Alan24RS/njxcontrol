@@ -7,6 +7,9 @@
  * - Ocupaciones finalizadas con pagos
  * - Abonos con pagos iniciales
  *
+ * IMPORTANTE: Este script incluye limpieza automática de datos previos
+ * para evitar duplicados en cada ejecución/despliegue.
+ *
  * PREREQUISITOS:
  * - Ejecutar primero db-seed.ts para crear la estructura base
  * - Base de datos local activa (supabase start)
@@ -173,9 +176,11 @@ async function obtenerPlayasYPlayeros() {
 }
 
 async function limpiarDatosAnteriores() {
-  // Rango: últimos 30 días (mismo que el seed genera)
+  console.log('🧹 Limpiando datos de reportes anteriores...')
+
+  // Rango: últimos 35 días (más margen que los 30 del seed)
   const fechaInicio = new Date()
-  fechaInicio.setDate(fechaInicio.getDate() - 30)
+  fechaInicio.setDate(fechaInicio.getDate() - 35)
   fechaInicio.setHours(0, 0, 0, 0)
 
   const fechaFin = new Date()
@@ -184,61 +189,79 @@ async function limpiarDatosAnteriores() {
   const isoInicio = fechaInicio.toISOString()
   const isoFin = fechaFin.toISOString()
 
-  // 1. Eliminar pagos en el rango (para evitar FKs)
-  const { error: errorPagos } = await supabase
-    .from('pago')
-    .delete()
-    .gte('fecha_hora_pago', isoInicio)
-    .lte('fecha_hora_pago', isoFin)
+  try {
+    // 1. Eliminar pagos en el rango (para evitar FKs)
+    const { count: countPagos } = await supabase
+      .from('pago')
+      .delete({ count: 'exact' })
+      .gte('fecha_hora_pago', isoInicio)
+      .lte('fecha_hora_pago', isoFin)
 
-  if (errorPagos) {
-    console.warn('   ⚠️  Error eliminando pagos:', errorPagos.message)
-  }
+    console.log(`   🗑️  Pagos eliminados: ${countPagos || 0}`)
 
-  // 2. Eliminar ocupaciones finalizadas en el rango
-  const { error: errorOcupaciones } = await supabase
-    .from('ocupacion')
-    .delete()
-    .gte('hora_ingreso', isoInicio)
-    .lte('hora_ingreso', isoFin)
+    // 2. Eliminar boletas en el rango
+    const { count: countBoletas } = await supabase
+      .from('boleta')
+      .delete({ count: 'exact' })
+      .gte('fecha_generacion_boleta', fechaInicio.toISOString().split('T')[0])
+      .lte('fecha_generacion_boleta', fechaFin.toISOString().split('T')[0])
 
-  if (errorOcupaciones) {
-    console.warn(
-      '   ⚠️  Error eliminando ocupaciones:',
-      errorOcupaciones.message
-    )
-  }
+    console.log(`   🗑️  Boletas eliminadas: ${countBoletas || 0}`)
 
-  // 3. Eliminar boletas y abonos (que referencian turnos en el rango)
-  const { error: errorBoletas } = await supabase
-    .from('boleta')
-    .delete()
-    .gte('fecha_generacion_boleta', fechaInicio.toISOString().split('T')[0])
-    .lte('fecha_generacion_boleta', fechaFin.toISOString().split('T')[0])
+    // 3. Eliminar abono_vehiculo vinculados a abonos en el rango
+    // Primero obtener los abonos del rango para eliminar solo sus vehículos
+    const { data: abonosRango } = await supabase
+      .from('abono')
+      .select('playa_id, plaza_id, fecha_hora_inicio')
+      .gte('fecha_hora_inicio', isoInicio)
+      .lte('fecha_hora_inicio', isoFin)
 
-  if (errorBoletas) {
-    console.warn('   ⚠️  Error eliminando boletas:', errorBoletas.message)
-  }
+    let countAbonoVeh = 0
+    if (abonosRango && abonosRango.length > 0) {
+      for (const abono of abonosRango) {
+        const { count } = await supabase
+          .from('abono_vehiculo')
+          .delete({ count: 'exact' })
+          .eq('playa_id', abono.playa_id)
+          .eq('plaza_id', abono.plaza_id)
+          .eq('fecha_hora_inicio', abono.fecha_hora_inicio)
 
-  const { error: errorAbonos } = await supabase
-    .from('abono')
-    .delete()
-    .gte('fecha_hora_inicio', isoInicio)
-    .lte('fecha_hora_inicio', isoFin)
+        countAbonoVeh += count || 0
+      }
+    }
 
-  if (errorAbonos) {
-    console.warn('   ⚠️  Error eliminando abonos:', errorAbonos.message)
-  }
+    console.log(`   🗑️  Abono-vehículos eliminados: ${countAbonoVeh}`)
 
-  // 4. Eliminar turnos en el rango
-  const { error: errorTurnos } = await supabase
-    .from('turno')
-    .delete()
-    .gte('fecha_hora_ingreso', isoInicio)
-    .lte('fecha_hora_ingreso', isoFin)
+    // 4. Eliminar abonos en el rango
+    const { count: countAbonos } = await supabase
+      .from('abono')
+      .delete({ count: 'exact' })
+      .gte('fecha_hora_inicio', isoInicio)
+      .lte('fecha_hora_inicio', isoFin)
 
-  if (errorTurnos) {
-    console.warn('   ⚠️  Error eliminando turnos:', errorTurnos.message)
+    console.log(`   🗑️  Abonos eliminados: ${countAbonos || 0}`)
+
+    // 5. Eliminar ocupaciones en el rango
+    const { count: countOcupaciones } = await supabase
+      .from('ocupacion')
+      .delete({ count: 'exact' })
+      .gte('hora_ingreso', isoInicio)
+      .lte('hora_ingreso', isoFin)
+
+    console.log(`   🗑️  Ocupaciones eliminadas: ${countOcupaciones || 0}`)
+
+    // 6. Eliminar turnos en el rango
+    const { count: countTurnos } = await supabase
+      .from('turno')
+      .delete({ count: 'exact' })
+      .gte('fecha_hora_ingreso', isoInicio)
+      .lte('fecha_hora_ingreso', isoFin)
+
+    console.log(`   🗑️  Turnos eliminados: ${countTurnos || 0}`)
+    console.log('   ✅ Limpieza completada')
+  } catch (error: any) {
+    console.warn('   ⚠️  Error durante limpieza:', error?.message)
+    // No bloqueamos el seed si falla la limpieza
   }
 }
 
