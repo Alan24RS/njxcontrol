@@ -70,6 +70,7 @@ export default function PagoStep() {
 
   const diasEnMes = getDaysInMonth(new Date())
   const diasHastaFinDeMes = getDaysUntilEndOfMonth(new Date())
+  const fechaActual = new Date()
 
   return (
     <div className="space-y-6">
@@ -81,6 +82,20 @@ export default function PagoStep() {
             <span className="text-muted-foreground">Abonado:</span>
             <span className="font-medium">
               {nombre} {apellido} (DNI: {dni})
+            </span>
+          </div>
+
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Fecha de inicio:</span>
+            <span className="font-medium">
+              {fechaActual.toLocaleString('es-AR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              })}{' '}
+              hs
             </span>
           </div>
 
