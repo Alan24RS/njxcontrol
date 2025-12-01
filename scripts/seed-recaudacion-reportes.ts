@@ -204,7 +204,7 @@ async function limpiarDatosAnteriores() {
     const { data: ocupacionesSeed } = await supabase
       .from('ocupacion')
       .select('ocupacion_id, playa_id, plaza_id')
-      .or('patente.like.AAA%,patente.like.BBB%')
+      .or('patente.like.AAA%,patente.like.BBA%,patente.like.BBM%')
 
     let countPagos = 0
     let countOcupaciones = 0
@@ -381,8 +381,14 @@ async function main() {
   console.log('   ✅ Turnos insertados\n')
 
   // 4. Insertar ocupaciones y registrar pagos
+  console.log(
+    '🅿️  Verificando plazas objetivo y limpiando ocupaciones de seed activas...'
+  )
+  const plazasBloqueadas = await precheckYLimpiarPlazas(ocupaciones)
+  console.log('   ✅ Prechequeo de plazas completado\n')
+
   console.log('🅿️  Procesando ocupaciones...')
-  await procesarOcupaciones(ocupaciones)
+  await procesarOcupaciones(ocupaciones, plazasBloqueadas)
   console.log('   ✅ Ocupaciones procesadas\n')
 
   // 5. Insertar abonos y registrar pagos
@@ -423,11 +429,127 @@ async function insertarTurnos(turnos: TestTurno[]) {
   console.log(`   📊 Insertados: ${insertados}, Errores: ${errores}`)
 }
 
-async function procesarOcupaciones(ocupaciones: TestOcupacion[]) {
+function pairKey(playaId: string, plazaId: string) {
+  return `${playaId}|${plazaId}`
+}
+
+async function precheckYLimpiarPlazas(ocupaciones: TestOcupacion[]) {
+  const objetivos = new Map<string, { playa_id: string; plaza_id: string }>()
+  for (const o of ocupaciones) {
+    objetivos.set(pairKey(o.playa_id, o.plaza_id), {
+      playa_id: o.playa_id,
+      plaza_id: o.plaza_id
+    })
+  }
+
+  const pares = Array.from(objetivos.values())
+  if (pares.length === 0) return new Set<string>()
+
+  const orExpr = pares
+    .slice(0, 500) // limitar tamaño del OR por seguridad
+    .map((p) => `and(playa_id.eq.${p.playa_id},plaza_id.eq.${p.plaza_id})`)
+    .join(',')
+
+  // 1) Diagnóstico de ocupaciones activas en plazas objetivo
+  const { data: activasObj } = await supabase
+    .from('ocupacion')
+    .select('ocupacion_id,playa_id,plaza_id,patente')
+    .eq('estado', 'ACTIVO')
+    .or(orExpr)
+
+  const activasPorPar = new Map<string, { total: number; seed: number }>()
+  const seedRegex = /^(AAA|BBA|BBM)\d{3}$/
+
+  for (const row of activasObj || []) {
+    const key = pairKey(row.playa_id as string, row.plaza_id as string)
+    const curr = activasPorPar.get(key) || { total: 0, seed: 0 }
+    curr.total += 1
+    if (seedRegex.test(String(row.patente))) curr.seed += 1
+    activasPorPar.set(key, curr)
+  }
+
+  // Log de diagnóstico
+  let conflictivas = 0
+  for (const [_key, info] of activasPorPar.entries()) {
+    if (info.total > 0) conflictivas++
+  }
+  if (conflictivas > 0) {
+    console.log(
+      `   ℹ️  Plazas con ocupaciones ACTIVAS antes de insertar: ${conflictivas}`
+    )
+  } else {
+    console.log('   ℹ️  No hay ocupaciones ACTIVAS en plazas objetivo')
+  }
+
+  // 2) Eliminar ocupaciones ACTIVAS de seed en esas plazas (defensivo)
+  const { data: activasCandidatas } = await supabase
+    .from('ocupacion')
+    .select('ocupacion_id,patente')
+    .eq('estado', 'ACTIVO')
+    .or(orExpr)
+
+  const seedIds = (activasCandidatas || [])
+    .filter((r) => seedRegex.test(String(r.patente)))
+    .map((r) => r.ocupacion_id)
+  let pagosEliminados = 0
+  let ocupEliminadas = 0
+  for (let i = 0; i < seedIds.length; i += 100) {
+    const batch = seedIds.slice(i, i + 100)
+    const { count: c1 } = await supabase
+      .from('pago')
+      .delete({ count: 'exact' })
+      .in('ocupacion_id', batch)
+    pagosEliminados += c1 || 0
+
+    const { count: c2 } = await supabase
+      .from('ocupacion')
+      .delete({ count: 'exact' })
+      .in('ocupacion_id', batch)
+    ocupEliminadas += c2 || 0
+  }
+
+  if (seedIds.length > 0) {
+    console.log(
+      `   🗑️  Ocupaciones de seed activas eliminadas: ${ocupEliminadas} (pagos: ${pagosEliminados})`
+    )
+  }
+
+  // 3) Rechequear plazas conflictivas (no-seed)
+  const { data: activasRestantes } = await supabase
+    .from('ocupacion')
+    .select('playa_id,plaza_id')
+    .eq('estado', 'ACTIVO')
+    .or(orExpr)
+
+  const bloqueadas = new Set<string>()
+  for (const row of activasRestantes || []) {
+    bloqueadas.add(pairKey(row.playa_id as string, row.plaza_id as string))
+  }
+
+  if (bloqueadas.size > 0) {
+    console.log(
+      `   ⚠️  ${bloqueadas.size} plazas tienen ocupaciones reales ACTIVAS. Esas inserciones se omitirán.`
+    )
+  }
+
+  return bloqueadas
+}
+
+async function procesarOcupaciones(
+  ocupaciones: TestOcupacion[],
+  plazasBloqueadas?: Set<string>
+) {
   let procesadas = 0
   let errores = 0
 
   for (const ocupacion of ocupaciones) {
+    const key = pairKey(ocupacion.playa_id, ocupacion.plaza_id)
+    if (plazasBloqueadas && plazasBloqueadas.has(key)) {
+      console.warn(
+        `   ⏭️  Omitida ocupación en plaza bloqueada (playa=${ocupacion.playa_id}, plaza=${ocupacion.plaza_id})`
+      )
+      continue
+    }
     // 1. Insertar ocupación
     const { data: ocupacionCreada, error: errorOcupacion } = await supabase
       .from('ocupacion')
