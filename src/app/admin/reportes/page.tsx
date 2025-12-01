@@ -14,8 +14,8 @@ export default async function ReportesPage() {
     redirect('/auth/login')
   }
 
-  // Verificar que el usuario sea DUENO
-  if (!user.roles.includes(ROL.DUENO)) {
+  // Verificar que el usuario sea DUENO o PLAYERO
+  if (!user.roles.includes(ROL.DUENO) && !user.roles.includes(ROL.PLAYERO)) {
     redirect('/admin')
   }
 

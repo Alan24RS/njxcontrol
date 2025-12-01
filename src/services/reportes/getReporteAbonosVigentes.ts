@@ -10,8 +10,8 @@ import { translateDBError } from '@/utils/errorMessages'
 
 /**
  * Obtiene el reporte de abonos vigentes por playa
- * Solo accesible para usuarios con rol DUENO
- * Los dueños solo ven las playas que les pertenecen (RLS)
+ * Accesible para usuarios con rol DUENO o PLAYERO
+ * Los dueños ven las playas que les pertenecen, los playeros ven las playas asignadas (RLS)
  */
 export const getReporteAbonosVigentes = cache(
   async (): Promise<ApiResponse<ReporteAbonosVigentes[]>> => {
@@ -25,8 +25,8 @@ export const getReporteAbonosVigentes = cache(
       }
     }
 
-    // Verificar que el usuario sea DUENO
-    if (!user.roles.includes(ROL.DUENO)) {
+    // Verificar que el usuario sea DUENO o PLAYERO
+    if (!user.roles.includes(ROL.DUENO) && !user.roles.includes(ROL.PLAYERO)) {
       return {
         data: null,
         error: 'No tienes permisos para acceder a los reportes'
