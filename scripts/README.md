@@ -276,6 +276,36 @@ pnpm db:seed:reportes
 # http://localhost:3000/admin/analytics/recaudacion
 ```
 
+**⚠️ Limpieza de datos de seed**:
+
+Cuando instalas la seed de reportes, los datos se acumulan. Para limpiar datos de seed en producción:
+
+```bash
+# Opción 1: Script TypeScript (requiere Node.js)
+pnpm db:cleanup --prod  # Producción
+pnpm db:cleanup --local # Local
+
+# Opción 2: SQL directo (recomendado para producción)
+# Ejecutar scripts/cleanup-seed-sql.sql en Supabase SQL Editor
+```
+
+**📝 Identificación de datos de seed**:
+
+Los datos de seed se identifican por patrones únicos:
+
+- **Ocupaciones**: Patentes que empiezan con `AAA*`, `BBA*`, `BBM*`
+- **Abonados**: Emails con formato `abonado{dni}@test.com`
+- **Vehículos**: Patentes de las ocupaciones/abonos seed
+
+Estos patrones **nunca deben usarse en datos reales de producción**.
+
+**🔧 Scripts disponibles**:
+
+- `cleanup-seed-direct.ts`: Script interactivo con selección de entorno
+- `cleanup-seed-sql.sql`: SQL puro para ejecución manual (recomendado)
+
+Ambos scripts manejan las FKs circulares entre `pago` ↔ `ocupacion` usando transacciones con `SET CONSTRAINTS DEFERRED`.
+
 ## 🔧 Comandos NPM
 
 ```bash
@@ -300,6 +330,10 @@ pnpm db:reset
 # Seeds
 pnpm db:seed          # Seed base: estructura y configuración
 pnpm db:seed:reportes # ⭐ NUEVO: Datos históricos para reportes
+
+# Limpieza de datos de seed
+pnpm db:cleanup --prod  # Limpiar seed en producción
+pnpm db:cleanup --local # Limpiar seed en local
 ```
 
 ### 💡 Comando Recomendado Antes de Deploy

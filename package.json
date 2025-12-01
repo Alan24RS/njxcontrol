@@ -18,6 +18,7 @@
     "db:migrate:ps1": "powershell -ExecutionPolicy Bypass -File scripts/migrate-production.ps1",
     "db:seed": "node --env-file=.env.local --import tsx scripts/db-seed.ts",
     "db:seed:reportes": "node --env-file=.env.local --import tsx scripts/seed-recaudacion-reportes.ts",
+    "db:cleanup": "node --env-file=.env.production --import tsx scripts/cleanup-seed-direct.ts",
     "db:setup": "bash scripts/setup-local-db.sh",
     "db:reset": "node scripts/reset-local-db.js",
     "db:reset:sh": "bash scripts/reset-local-db.sh",

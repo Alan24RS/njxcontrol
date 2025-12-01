@@ -7,14 +7,25 @@
  * - Ocupaciones finalizadas con pagos
  * - Abonos con pagos iniciales
  *
- * LIMPIEZA AUTOMÁTICA (Estrategia por patrones únicos):
- * - Elimina TODOS los datos de seed anteriores antes de generar nuevos
- * - Identificación por patrones en lugar de rangos de fecha:
- *   · Ocupaciones: patentes AAA*, BBB*
- *   · Abonos: emails abonado*@test.com
- *   · Turnos: últimos 56 días cerrados
- *   · Vehículos: patentes de seed huérfanas
- * - Garantiza limpieza completa sin importar antigüedad de datos
+ * ⚠️ LIMPIEZA DE DATOS:
+ * Este script NO limpia datos automáticamente para evitar acumulación.
+ *
+ * Para limpiar datos de seed en producción/local:
+ *
+ *   # Opción 1: Script TypeScript (interactivo)
+ *   pnpm db:cleanup --prod   # Producción
+ *   pnpm db:cleanup --local  # Local
+ *
+ *   # Opción 2: SQL directo (recomendado para producción)
+ *   # Ejecutar scripts/cleanup-seed-sql.sql en Supabase SQL Editor
+ *
+ * 🔍 IDENTIFICACIÓN DE DATOS SEED:
+ * Los datos de seed se identifican por patrones únicos:
+ *   · Ocupaciones: patentes AAA*, BBA*, BBM*
+ *   · Abonados: emails abonado{dni}@test.com
+ *   · Vehículos: patentes de ocupaciones/abonos seed
+ *
+ * ⚠️ IMPORTANTE: Estos patrones NUNCA deben usarse en datos reales
  *
  * PREREQUISITOS:
  * - Ejecutar primero db-seed.ts para crear la estructura base
