@@ -144,7 +144,6 @@ export default function MapaContainer() {
                 <DisponibilidadBadge
                   disponibilidad={playa.disponibilidadPorTipo}
                   totalDisponibles={playa.totalDisponibles}
-                  className="absolute -top-2 -right-2"
                 />
               </PlayaMarker>
             )
