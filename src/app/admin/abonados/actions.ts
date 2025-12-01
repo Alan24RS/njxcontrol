@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 
 import { type CreateAbonadoWithAbonoFormData } from '@/schemas/abonado'
+import { updateAbonado, type UpdateAbonadoParams } from '@/services/abonados'
 import { createAbono } from '@/services/abonos'
 import { ApiResponse } from '@/types/api'
 
@@ -23,6 +24,21 @@ export async function createAbonadoWithAbonoCompleteAction(
       tipoVehiculo: v.tipo_vehiculo
     }))
   })
+
+  if (result.error) {
+    return result
+  }
+
+  revalidatePath('/admin/abonados')
+  revalidatePath('/admin/abonos')
+
+  return result
+}
+
+export async function updateAbonadoAction(
+  params: UpdateAbonadoParams
+): Promise<ApiResponse<any>> {
+  const result = await updateAbonado(params)
 
   if (result.error) {
     return result
