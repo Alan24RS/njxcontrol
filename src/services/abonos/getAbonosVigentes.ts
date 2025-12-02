@@ -45,7 +45,7 @@ export async function getAbonosVigentes(playaId?: string): Promise<{
           .eq('playa_id', abono.playa_id)
           .eq('plaza_id', abono.plaza_id)
           .eq('fecha_hora_inicio_abono', abono.fecha_hora_inicio)
-          .eq('estado', 'VENCIDA')
+          .in('estado', ['PENDIENTE', 'VENCIDA'])
 
         const tieneDeuda = (boletasData?.length || 0) > 0
 

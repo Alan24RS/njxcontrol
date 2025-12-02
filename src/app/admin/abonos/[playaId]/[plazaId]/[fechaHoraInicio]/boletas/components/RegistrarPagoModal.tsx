@@ -270,9 +270,9 @@ export default function RegistrarPagoModal({
                           </SelectItem>
                         ))
                       ) : (
-                        <SelectItem value="" disabled>
+                        <div className="text-muted-foreground px-2 py-1.5 text-sm">
                           No hay métodos de pago activos
-                        </SelectItem>
+                        </div>
                       )}
                     </SelectContent>
                   </Select>
