@@ -1,0 +1,1 @@
+export { ReportesPlayaActualContent } from './ReportesPlayaActualContent'
