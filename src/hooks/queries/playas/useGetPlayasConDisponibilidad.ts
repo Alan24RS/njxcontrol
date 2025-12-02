@@ -1,0 +1,19 @@
+'use client'
+
+import { useQuery } from '@tanstack/react-query'
+
+import { getPlayasConDisponibilidadAction } from '@/app/mapa/actions'
+import type { PlayaConDisponibilidad } from '@/services/playas/types'
+import type { ApiResponse } from '@/types/api'
+
+export function useGetPlayasConDisponibilidad() {
+  return useQuery<ApiResponse<PlayaConDisponibilidad[]>>({
+    queryKey: ['playas-con-disponibilidad'],
+    queryFn: async () => {
+      return await getPlayasConDisponibilidadAction()
+    },
+    staleTime: 3 * 60 * 1000, // 3 minutos
+    refetchInterval: 3 * 60 * 1000, // Refrescar cada 3 minutos
+    refetchOnWindowFocus: true
+  })
+}

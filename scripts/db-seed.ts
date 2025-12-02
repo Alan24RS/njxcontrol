@@ -1,3 +1,5 @@
+import { execSync } from 'node:child_process'
+
 import { createClient } from '@supabase/supabase-js'
 
 import { PLAYERO_PLAYA_ESTADO } from '../src/constants/playeroEstado'
@@ -52,6 +54,22 @@ async function seedDatabase() {
 
   console.log('\n🎭 Seeding dev data...\n')
   await seedDevData()
+
+  // --------------------------------------------------------------
+  //  REPORTES (RECAUDACIÓN) SEED - siempre ejecutada
+  // --------------------------------------------------------------
+  console.log('\n📊 Seeding datos de reportes (recaudación)...')
+  try {
+    execSync('node --import tsx scripts/seed-recaudacion-reportes.ts', {
+      stdio: 'inherit'
+    })
+    console.log('   ✅ Reportes seed finalizado')
+  } catch (error: any) {
+    console.warn(
+      '   ⚠️  Seed de reportes no completado. Continuando. Motivo:',
+      error?.message || error
+    )
+  }
 
   console.log('\n✅ Database seeding complete!')
   process.exit(0)

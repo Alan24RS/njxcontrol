@@ -49,12 +49,45 @@ export async function getAbonosVigentes(playaId?: string): Promise<{
 
         const tieneDeuda = (boletasData?.length || 0) > 0
 
+        // Calcular precio_mensual si no está disponible
+        let precioMensual = Number(abono.precio_mensual) || 0
+
+        if (!precioMensual || precioMensual === 0) {
+          // Obtener tipo_plaza_id de la plaza
+          const { data: plazaData } = await supabase
+            .from('plaza')
+            .select('tipo_plaza_id')
+            .eq('plaza_id', abono.plaza_id)
+            .single()
+
+          if (plazaData) {
+            // Preparar vehiculos para la función
+            const vehiculos = abono.abono_vehiculo.map((av: any) => ({
+              tipo_vehiculo: av.vehiculo.tipo_vehiculo
+            }))
+
+            // Llamar a la función de cálculo de tarifa
+            const { data: tarifaData } = await supabase.rpc(
+              'get_max_tarifa_abono_vehiculos',
+              {
+                p_playa_id: abono.playa_id,
+                p_tipo_plaza_id: plazaData.tipo_plaza_id,
+                p_vehiculos: vehiculos
+              }
+            )
+
+            if (tarifaData) {
+              precioMensual = Number(tarifaData)
+            }
+          }
+        }
+
         return {
           playaId: abono.playa_id,
           playaNombre: abono.playa?.nombre || 'Sin nombre',
           plazaId: abono.plaza_id,
           fechaHoraInicio: new Date(abono.fecha_hora_inicio),
-          precioMensual: Number(abono.precio_mensual),
+          precioMensual,
           estado: abono.estado,
           plazaIdentificador: abono.plaza.identificador,
           tipoPlazaNombre: abono.plaza.tipo_plaza.nombre,

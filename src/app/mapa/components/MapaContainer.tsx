@@ -13,15 +13,20 @@ import {
   CardHeader,
   CardTitle
 } from '@/components/ui'
+import {
+  DisponibilidadBadge,
+  DisponibilidadDetalle
+} from '@/components/ui/DisponibilidadPlazas'
 import Map from '@/components/ui/GoogleMaps/Map'
 import PlayaMarker from '@/components/ui/GoogleMaps/PlayaMarker'
-import { useGetPlayasCercanas } from '@/hooks/queries/playas/useGetPlayasCercanas'
+import { useGetPlayasConDisponibilidad } from '@/hooks/queries/playas/useGetPlayasConDisponibilidad'
 import { useAdminTheme } from '@/hooks/useAdminTheme'
 import { useGeolocation } from '@/hooks/useGeolocation'
-import type { PlayaPublica } from '@/services/playas/types'
+import type { PlayaConDisponibilidad } from '@/services/playas/types'
 
 export default function MapaContainer() {
-  const [selectedPlaya, setSelectedPlaya] = useState<PlayaPublica | null>(null)
+  const [selectedPlaya, setSelectedPlaya] =
+    useState<PlayaConDisponibilidad | null>(null)
   const markerClickedRef = useRef(false)
   const { isDark } = useAdminTheme()
 
@@ -30,21 +35,43 @@ export default function MapaContainer() {
     isError,
     location
   } = useGeolocation({
-    askGeolocation: true
+    askGeolocation: false // Cambiado a false para no pedir ubicación automáticamente
   })
 
   const {
-    data: playasCercanasData,
+    data: playasData,
     isLoading: isLoadingPlayas,
     error: playasError
-  } = useGetPlayasCercanas({
-    latitud: location?.latitude || 0,
-    longitud: location?.longitude || 0,
-    radio: 5000
-  })
+  } = useGetPlayasConDisponibilidad()
 
-  const playasCercanas = playasCercanasData?.data || []
+  const playas = playasData?.data || []
   const isLoading = isLoadingLocation || isLoadingPlayas
+
+  // Debug: log para verificar datos
+  console.log('🔍 MapaContainer - playasData:', playasData)
+  console.log('🔍 MapaContainer - playas:', playas)
+  console.log('🔍 MapaContainer - isLoadingPlayas:', isLoadingPlayas)
+  console.log('🔍 MapaContainer - playasError:', playasError)
+
+  // Calcular el centro y zoom óptimo para mostrar todas las playas
+  const mapCenter = location
+    ? { lat: location.latitude, lng: location.longitude }
+    : playas.length > 0
+      ? {
+          lat:
+            playas.reduce((sum: number, p) => sum + (p.latitud || 0), 0) /
+            playas.length,
+          lng:
+            playas.reduce((sum: number, p) => sum + (p.longitud || 0), 0) /
+            playas.length
+        }
+      : undefined
+
+  // Zoom más alejado cuando no hay ubicación del usuario
+  const mapZoom = location ? 15 : 12
+
+  console.log('🔍 MapaContainer - mapCenter:', mapCenter)
+  console.log('🔍 MapaContainer - mapZoom:', mapZoom)
 
   if (playasError) {
     throw playasError
@@ -80,25 +107,47 @@ export default function MapaContainer() {
           gestureHandling="greedy"
           colorScheme={isDark ? ColorScheme.DARK : ColorScheme.LIGHT}
           userLocation={location}
+          center={mapCenter}
+          initialZoom={mapZoom}
           onClick={() => {
             if (markerClickedRef.current) return
             if (selectedPlaya) setSelectedPlaya(null)
           }}
         >
-          {playasCercanas.map((playa) => (
-            <PlayaMarker
-              key={playa.id}
-              position={{ lat: playa.latitud!, lng: playa.longitud! }}
-              title={playa.direccion}
-              onClick={() => {
-                markerClickedRef.current = true
-                setSelectedPlaya(playa)
-                setTimeout(() => {
-                  markerClickedRef.current = false
-                }, 100)
-              }}
-            />
-          ))}
+          {playas.map((playa: PlayaConDisponibilidad) => {
+            console.log('🔍 MapaContainer - Rendering playa:', {
+              id: playa.id,
+              nombre: playa.nombre,
+              latitud: playa.latitud,
+              longitud: playa.longitud,
+              hasLatLng: !!(playa.latitud && playa.longitud)
+            })
+
+            if (!playa.latitud || !playa.longitud) {
+              console.warn('⚠️ Playa sin coordenadas:', playa.nombre)
+              return null
+            }
+
+            return (
+              <PlayaMarker
+                key={playa.id}
+                position={{ lat: playa.latitud, lng: playa.longitud }}
+                title={playa.direccion}
+                onClick={() => {
+                  markerClickedRef.current = true
+                  setSelectedPlaya(playa)
+                  setTimeout(() => {
+                    markerClickedRef.current = false
+                  }, 100)
+                }}
+              >
+                <DisponibilidadBadge
+                  disponibilidad={playa.disponibilidadPorTipo}
+                  totalDisponibles={playa.totalDisponibles}
+                />
+              </PlayaMarker>
+            )
+          })}
 
           {selectedPlaya && (
             <InfoWindow
@@ -109,12 +158,12 @@ export default function MapaContainer() {
               onCloseClick={() => setSelectedPlaya(null)}
               headerDisabled
             >
-              <Card className="max-w-xs border-0 shadow-none">
+              <Card className="max-w-sm border-0 shadow-none">
                 <CardHeader className="pb-2">
                   <CardTitle className="flex items-center justify-between text-base">
                     <div className="flex items-center gap-2">
                       <MapPin className="text-primary h-4 w-4" />
-                      {selectedPlaya.direccion}
+                      {selectedPlaya.nombre || selectedPlaya.direccion}
                     </div>
                     <button
                       onClick={() => setSelectedPlaya(null)}
@@ -135,6 +184,16 @@ export default function MapaContainer() {
                     <Clock className="h-4 w-4" />
                     {selectedPlaya.horario}
                   </div>
+
+                  {/* Información de disponibilidad */}
+                  <div className="mb-3">
+                    <DisponibilidadDetalle
+                      disponibilidad={selectedPlaya.disponibilidadPorTipo}
+                      totalPlazas={selectedPlaya.totalPlazas}
+                      totalDisponibles={selectedPlaya.totalDisponibles}
+                    />
+                  </div>
+
                   <button
                     onClick={() => {
                       const url = `https://www.google.com/maps/dir/?api=1&destination=${selectedPlaya.latitud},${selectedPlaya.longitud}`
@@ -151,14 +210,14 @@ export default function MapaContainer() {
           )}
         </Map>
 
-        {playasCercanas.length > 0 && (
+        {playas.length > 0 && (
           <div className="bg-background absolute top-4 left-4 z-10 hidden max-h-96 w-72 overflow-y-auto rounded-lg border shadow-lg md:block">
             <div className="p-4">
               <h2 className="mb-4 text-lg font-semibold">
-                Playas cercanas ({playasCercanas.length})
+                Playas disponibles ({playas.length})
               </h2>
               <div className="space-y-3">
-                {playasCercanas.map((playa) => (
+                {playas.map((playa: PlayaConDisponibilidad) => (
                   <Card
                     key={playa.id}
                     className={`hover:bg-muted/50 cursor-pointer transition-colors ${
@@ -172,9 +231,15 @@ export default function MapaContainer() {
                       <div className="flex items-start gap-2">
                         <MapPin className="text-primary mt-0.5 h-4 w-4" />
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium">
-                            {playa.nombre || playa.direccion}
-                          </p>
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="truncate text-sm font-medium">
+                              {playa.nombre || playa.direccion}
+                            </p>
+                            <DisponibilidadBadge
+                              disponibilidad={playa.disponibilidadPorTipo}
+                              totalDisponibles={playa.totalDisponibles}
+                            />
+                          </div>
                           {playa.descripcion && (
                             <p className="text-muted-foreground mt-1 line-clamp-2 text-xs">
                               {playa.descripcion}

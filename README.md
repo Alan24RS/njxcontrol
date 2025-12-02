@@ -206,14 +206,22 @@ pnpm test:ui          # Abre UI de Vitest
 ### 🗄️ Base de Datos
 
 ```bash
+# Información y estado
 pnpm db:info          # Ver información del ambiente
 pnpm db:status        # Estado de migraciones
 pnpm db:check         # Verificar migraciones pendientes
+
+# Migraciones y setup
 pnpm db:migrate       # Aplicar migraciones
-pnpm db:seed          # Insertar datos de prueba
-pnpm db:setup         # Setup completo (migrar + seed)
+pnpm db:setup         # Setup completo (migrar + seed base)
 pnpm db:reset         # Reset completo de BD
+
+# Seeds de datos
+pnpm db:seed          # Seed base: estructura y configuración
+pnpm db:seed:reportes # Seed de reportes: datos históricos para analytics
 ```
+
+> 💡 **Nuevo:** El seed de reportes (`pnpm db:seed:reportes`) genera ~120 ocupaciones y ~10 abonos con pagos históricos para probar reportes de recaudación. Ver: [`docs/ANALISIS_OPERACIONES_BD.md`](./docs/ANALISIS_OPERACIONES_BD.md)
 
 ### 🎨 Assets
 

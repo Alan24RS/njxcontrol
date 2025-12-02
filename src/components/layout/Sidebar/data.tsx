@@ -1,4 +1,5 @@
 import {
+  BarChart3,
   CalendarIcon,
   CarFront,
   ChartBar,
@@ -27,12 +28,20 @@ export const general: SidebarItem[] = [
     roles: [ROL.DUENO, ROL.PLAYERO]
   },
   {
-    title: 'Reportes',
-    url: '/admin/reportes',
-    icon: ChartBar,
+    title: 'Analytics',
+    url: '/admin/analytics',
+    icon: BarChart3,
     isActive: false,
     roles: [ROL.DUENO],
     items: [
+      {
+        title: 'Informe de Recaudación',
+        url: '/admin/analytics/recaudacion'
+      },
+      {
+        title: 'Performance de Playeros',
+        url: '/admin/analytics/performance-playero'
+      },
       {
         title: 'Abonos Vigentes',
         url: '/admin/reportes'
@@ -40,8 +49,20 @@ export const general: SidebarItem[] = [
       {
         title: 'Ocupaciones por Turno',
         url: '/admin/reportes/ocupaciones'
+      },
+      {
+        title: 'Pagos Mensuales',
+        url: '/admin/reportes/pagos-mensuales'
       }
     ]
+  },
+  {
+    title: 'Reportes',
+    url: '/admin/reportes',
+    icon: ChartBar,
+    isActive: false,
+    roles: [ROL.DUENO],
+    items: []
   },
   {
     title: 'Playas',
@@ -87,6 +108,23 @@ export const playaActual: SidebarItem[] = [
     icon: ParkingCircle,
     isActive: false,
     roles: [ROL.PLAYERO]
+  },
+  {
+    title: 'Reportes',
+    url: '/admin/reportes/playa-actual',
+    icon: ChartBar,
+    isActive: false,
+    roles: [ROL.PLAYERO],
+    items: [
+      {
+        title: 'Turno Actual',
+        url: '/admin/reportes/turno-actual'
+      },
+      {
+        title: 'Pagos Mensuales',
+        url: '/admin/reportes/pagos-mensuales'
+      }
+    ]
   },
   {
     title: 'Abonos',

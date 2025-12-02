@@ -7,19 +7,37 @@ import { getReporteOcupacionesPorTurno } from '@/services/reportes'
 
 import { ReportesOcupacionesContent } from './components/ReportesOcupacionesContent'
 
-export default async function ReportesOcupacionesPage() {
+interface SearchParams {
+  playa?: string
+  fechaDesde?: string
+  fechaHasta?: string
+}
+
+export default async function ReportesOcupacionesPage({
+  searchParams
+}: {
+  searchParams: Promise<SearchParams>
+}) {
   const user = await getAuthenticatedUser()
 
   if (!user) {
     redirect('/auth/login')
   }
 
-  // Verificar que el usuario sea DUENO
-  if (!user.roles.includes(ROL.DUENO)) {
+  // Verificar que el usuario sea DUENO o PLAYERO
+  const esDueno = user.roles.includes(ROL.DUENO)
+  const esPlayero = user.roles.includes(ROL.PLAYERO)
+
+  if (!esDueno && !esPlayero) {
     redirect('/admin')
   }
 
-  const { data: reportes, error } = await getReporteOcupacionesPorTurno()
+  const params = await searchParams
+  const { data: reportes, error } = await getReporteOcupacionesPorTurno(
+    params.playa,
+    params.fechaDesde,
+    params.fechaHasta
+  )
 
   return (
     <PageContainer className="px-6">

@@ -222,7 +222,7 @@ El script te guiará, pero básicamente:
 
 #### `db-seed.ts`
 
-**Script unificado** que ejecuta todos los seeds:
+**Script unificado** que ejecuta todos los seeds base:
 
 - Datos maestros (características, etc.)
 - Datos de prueba (usuarios, playas, tarifas, etc.)
@@ -232,7 +232,79 @@ El script te guiará, pero básicamente:
 - `seeds/base/` - Datos maestros
 - `seeds/dev/` - Datos de prueba
 
-**Uso**: `pnpm db:seed` - Ejecuta todo
+**Uso**: `pnpm db:seed` - Ejecuta seed base completo
+
+---
+
+#### `seed-recaudacion-reportes.ts` ⭐ NUEVO
+
+**Script especializado** para generar datos históricos de recaudación:
+
+- ~40 turnos distribuidos en últimos 30 días
+- ~120 ocupaciones finalizadas con pagos
+- ~10 abonos activos con pagos iniciales
+- Mix realista de métodos de pago y tipos de vehículos
+- Recaudación total: ~$500,000-800,000 ARS
+
+**Datos generados en**: `seeds/dev/recaudacion-reportes.ts`
+
+**Prerequisitos**:
+
+1. Ejecutar `pnpm db:seed` primero (estructura base)
+2. Supabase local corriendo
+
+**Uso**: `pnpm db:seed:reportes`
+
+**Validar resultados**:
+
+```
+http://localhost:3000/admin/analytics/recaudacion
+```
+
+**Documentación completa**: [`../docs/ANALISIS_OPERACIONES_BD.md`](../docs/ANALISIS_OPERACIONES_BD.md)
+
+**Workflow recomendado**:
+
+```bash
+# 1. Setup base
+pnpm db:seed
+
+# 2. Agregar datos históricos
+pnpm db:seed:reportes
+
+# 3. Ver reportes
+# http://localhost:3000/admin/analytics/recaudacion
+```
+
+**⚠️ Limpieza de datos de seed**:
+
+Cuando instalas la seed de reportes, los datos se acumulan. Para limpiar datos de seed en producción:
+
+```bash
+# Opción 1: Script TypeScript (requiere Node.js)
+pnpm db:cleanup --prod  # Producción
+pnpm db:cleanup --local # Local
+
+# Opción 2: SQL directo (recomendado para producción)
+# Ejecutar scripts/cleanup-seed-sql.sql en Supabase SQL Editor
+```
+
+**📝 Identificación de datos de seed**:
+
+Los datos de seed se identifican por patrones únicos:
+
+- **Ocupaciones**: Patentes que empiezan con `AAA*`, `BBA*`, `BBM*`
+- **Abonados**: Emails con formato `abonado{dni}@test.com`
+- **Vehículos**: Patentes de las ocupaciones/abonos seed
+
+Estos patrones **nunca deben usarse en datos reales de producción**.
+
+**🔧 Scripts disponibles**:
+
+- `cleanup-seed-direct.ts`: Script interactivo con selección de entorno
+- `cleanup-seed-sql.sql`: SQL puro para ejecución manual (recomendado)
+
+Ambos scripts manejan las FKs circulares entre `pago` ↔ `ocupacion` usando transacciones con `SET CONSTRAINTS DEFERRED`.
 
 ## 🔧 Comandos NPM
 
@@ -255,8 +327,13 @@ pnpm db:setup
 # Reset completo + seed (solo desarrollo)
 pnpm db:reset
 
-# Seed completo (base + dev data)
-pnpm db:seed
+# Seeds
+pnpm db:seed          # Seed base: estructura y configuración
+pnpm db:seed:reportes # ⭐ NUEVO: Datos históricos para reportes
+
+# Limpieza de datos de seed
+pnpm db:cleanup --prod  # Limpiar seed en producción
+pnpm db:cleanup --local # Limpiar seed en local
 ```
 
 ### 💡 Comando Recomendado Antes de Deploy

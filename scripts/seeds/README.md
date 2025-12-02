@@ -54,10 +54,12 @@ seeds/
 
 **Contenido actual**:
 
+- `caracteristicas.ts` - Características de plazas (Techada, Con cargador, etc.)
 - `ciudades.ts` - Resistencia y Corrientes (para testing)
 - `users.ts` - Usuarios de prueba (dueno@test.com, playero@test.com)
 - `playas.ts` - Playas de prueba con toda su configuración (tipos de plaza, tarifas, plazas, métodos de pago, tipos de vehículo)
 - `modalidades.ts` - Modalidades de ocupación habilitadas por playa
+- `recaudacion-reportes.ts` - **NUEVO:** Generador de datos históricos para reportes de recaudación
 
 **¿Cuándo agregar aquí?**
 
@@ -131,10 +133,13 @@ pnpm db:seed
 ### Durante Desarrollo Local
 
 ```bash
-# Aplicar todos los seeds (base + dev)
+# Aplicar seed base (estructura y configuración)
 pnpm db:seed
 
-# O reiniciar todo (incluye migración + seed)
+# Aplicar seed de reportes (datos históricos para analytics)
+pnpm db:seed:reportes
+
+# O reiniciar todo (incluye migración + seed base)
 pnpm db:reset
 ```
 
@@ -230,6 +235,48 @@ await supabase.from('tabla').upsert(misDatos, {
 ```
 
 ## 📊 Datos Actuales
+
+### Scripts Disponibles
+
+#### 1. **Seed Base** (`pnpm db:seed`)
+
+Estructura y configuración del sistema:
+
+- ⭐ 6 características de plazas
+- 🏙️ 2 ciudades (Resistencia, Corrientes)
+- 👤 6 usuarios de prueba (dueños y playeros)
+- 🏖️ 4 playas con configuración completa
+- 🅿️ 16 plazas totales
+- 💰 Tarifas configuradas
+- 💳 Métodos de pago
+- 🚗 Tipos de vehículo
+
+#### 2. **Seed de Reportes** (`pnpm db:seed:reportes`) - NUEVO
+
+Datos históricos para probar analytics:
+
+- 🕐 ~40 turnos (últimos 30 días)
+- 🚗 ~120 ocupaciones finalizadas con pagos
+- 📝 ~10 abonos activos con primera boleta pagada
+- 💰 Recaudación total: ~$500,000-800,000 ARS
+- 📊 Distribución realista entre playas y playeros
+
+**Uso:**
+
+```bash
+# 1. Primero seed base (si no existe)
+pnpm db:seed
+
+# 2. Luego seed de reportes
+pnpm db:seed:reportes
+
+# 3. Ver resultados en:
+# http://localhost:3000/admin/analytics/recaudacion
+```
+
+Ver documentación completa en: `docs/ANALISIS_OPERACIONES_BD.md`
+
+## 📊 Datos Legacy (Referencia)
 
 ### Base (Producción OK)
 
