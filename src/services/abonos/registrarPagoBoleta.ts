@@ -42,32 +42,15 @@ export async function registrarPagoBoleta(
       }
     }
 
-    const { data: boletaActualizada, error: boletaError } = await supabase
-      .from('boleta')
-      .select('monto_pagado, estado, monto')
-      .eq('playa_id', params.playaId)
-      .eq('plaza_id', params.plazaId)
-      .eq('fecha_hora_inicio_abono', params.fechaHoraInicioAbono)
-      .eq('fecha_generacion_boleta', params.fechaGeneracionBoleta)
-      .single()
-
-    if (boletaError || !boletaActualizada) {
-      return {
-        data: null,
-        error:
-          boletaError?.message ||
-          'No se pudo obtener el estado actualizado de la boleta'
-      }
-    }
-
-    const montoPagadoTotal = Number(boletaActualizada.monto_pagado || 0)
-    const montoTotal = Number(boletaActualizada.monto || 0)
+    // Usar los datos retornados por el RPC directamente
+    const montoPagadoTotal = Number(boletaData.monto_pagado || 0)
+    const montoTotal = Number(boletaData.monto || 0)
     const deudaPendiente = montoTotal - montoPagadoTotal
 
     const rawResponse: RawRegistrarPagoBoleta = {
       monto_pagado_total: montoPagadoTotal,
       deuda_pendiente: deudaPendiente,
-      estado_boleta: boletaActualizada.estado || 'PENDIENTE'
+      estado_boleta: boletaData.estado || 'PENDIENTE'
     }
 
     return {
