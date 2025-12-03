@@ -73,7 +73,98 @@ export async function finalizarAbonoAction(
   }
 }
 
+type RegistrarPagoFormState = {
+  success: boolean
+  data?: {
+    montoPagadoTotal: number
+    deudaPendiente: number
+    estadoBoleta: string
+  }
+  error?: string
+  fields?: Record<string, string>
+  errors?: Record<string, string[]>
+}
+
 export async function registrarPagoBoletaAction(
+  prevState: RegistrarPagoFormState,
+  payload: FormData
+): Promise<RegistrarPagoFormState> {
+  if (!(payload instanceof FormData)) {
+    return {
+      success: false,
+      errors: { general: ['Datos de formulario inválidos'] }
+    }
+  }
+
+  const formData = Object.fromEntries(payload)
+
+  const processedData = {
+    playaId: formData.playaId as string,
+    plazaId: formData.plazaId as string,
+    fechaHoraInicioAbono: formData.fechaHoraInicioAbono as string,
+    fechaGeneracionBoleta: formData.fechaGeneracionBoleta as string,
+    monto: formData.monto ? Number(formData.monto) : 0,
+    metodoPago: formData.metodoPago as string
+  }
+
+  if (!processedData.playaId || !processedData.plazaId) {
+    return {
+      success: false,
+      errors: { general: ['Faltan datos de la boleta'] }
+    }
+  }
+
+  if (
+    !processedData.fechaHoraInicioAbono ||
+    !processedData.fechaGeneracionBoleta
+  ) {
+    return {
+      success: false,
+      errors: { general: ['Faltan datos de fecha de la boleta'] }
+    }
+  }
+  if (!processedData.monto || processedData.monto <= 0) {
+    return {
+      success: false,
+      errors: { monto: ['El monto debe ser mayor a 0'] }
+    }
+  }
+
+  if (!processedData.metodoPago) {
+    return {
+      success: false,
+      errors: { metodoPago: ['Selecciona un método de pago'] }
+    }
+  }
+
+  try {
+    const result = await registrarPagoBoleta(processedData)
+
+    if (result.error) {
+      return {
+        success: false,
+        error: result.error
+      }
+    }
+
+    revalidatePath('/admin/abonos')
+    revalidatePath(
+      `/admin/abonos/${processedData.playaId}/${processedData.plazaId}/${processedData.fechaHoraInicioAbono}/boletas`
+    )
+
+    return {
+      success: true,
+      data: result.data ?? undefined
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Error al registrar pago'
+    }
+  }
+}
+
+export async function registrarPagoBoletaActionDirect(
   params: RegistrarPagoBoletaParams
 ): Promise<{ success: boolean; data?: any; error?: string }> {
   try {

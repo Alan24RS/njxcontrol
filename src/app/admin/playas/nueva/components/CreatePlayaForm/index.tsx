@@ -20,6 +20,13 @@ type FormState = {
   errors?: Record<string, string[]>
 }
 
+const DEFAULT_LOCATION = {
+  latitud: -34.603722,
+  longitud: -58.381592,
+  ciudad: 'Buenos Aires',
+  provincia: 'Ciudad Autónoma de Buenos Aires'
+} as const
+
 export const DEFAULT_VALUES: CreatePlayaRequest = {
   nombre: '',
   descripcion: '',
@@ -89,7 +96,7 @@ export default function CreatePlayaForm() {
     }
   }, [formState, router])
 
-  const { handleSubmit } = form
+  const { handleSubmit, getValues, setValue } = form
 
   return (
     <Form {...form}>
@@ -97,9 +104,41 @@ export default function CreatePlayaForm() {
         ref={formRef}
         action={formAction}
         onSubmit={handleSubmit(() => {
+          // TODO: TEMP FIX - REVERTIR CUANDO MAPS FUNCIONE
+          // Asegurar valores por defecto antes de enviar (por si acaso)
+          const latitud = getValues('latitud')
+          const longitud = getValues('longitud')
+          const ciudad = getValues('ciudad')
+          const provincia = getValues('provincia')
+
+          if (!latitud || latitud === 0 || !longitud || longitud === 0) {
+            setValue('latitud', DEFAULT_LOCATION.latitud, {
+              shouldValidate: false
+            })
+            setValue('longitud', DEFAULT_LOCATION.longitud, {
+              shouldValidate: false
+            })
+          }
+          if (!ciudad || ciudad.trim() === '') {
+            setValue('ciudad', DEFAULT_LOCATION.ciudad, {
+              shouldValidate: false
+            })
+          }
+          if (!provincia || provincia.trim() === '') {
+            setValue('provincia', DEFAULT_LOCATION.provincia, {
+              shouldValidate: false
+            })
+          }
           // El hidden 'horario' ya debe estar actualizado por Fieldset (watch)
+          // Actualizar el FormData con los valores actualizados
+          const formData = new FormData(formRef.current!)
+          formData.set('latitud', String(getValues('latitud')))
+          formData.set('longitud', String(getValues('longitud')))
+          formData.set('ciudad', getValues('ciudad'))
+          formData.set('provincia', getValues('provincia'))
+
           startTransition(() => {
-            formAction(new FormData(formRef.current!))
+            formAction(formData)
           })
         })}
         className="space-y-4"

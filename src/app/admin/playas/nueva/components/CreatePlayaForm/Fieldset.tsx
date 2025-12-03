@@ -4,7 +4,7 @@ import { useCallback, useEffect } from 'react'
 import { useFormContext } from 'react-hook-form'
 
 import {
-  AddressAutocomplete,
+  // AddressAutocomplete, // TODO: TEMP FIX - REVERTIR CUANDO MAPS FUNCIONE
   FormControl,
   FormField,
   FormItem,
@@ -12,8 +12,8 @@ import {
   FormMessage,
   Input
 } from '@/components/ui'
-import type { GooglePlaceDetails } from '@/services/google'
 
+// import type { GooglePlaceDetails } from '@/services/google' // TODO: TEMP FIX - REVERTIR CUANDO MAPS FUNCIONE
 import ScheduleBuilder from './ScheduleBuilder'
 
 const DAY_LABEL: Record<string, string> = {
@@ -31,8 +31,15 @@ interface FieldsetProps {
 }
 
 export default function Fieldset({ namePrefix = '' }: FieldsetProps) {
-  const { control, setValue, formState, trigger, register, watch, getValues } =
-    useFormContext()
+  const {
+    control,
+    setValue,
+    formState: _formState,
+    trigger,
+    register,
+    watch,
+    getValues
+  } = useFormContext()
 
   const getFieldName = useCallback(
     (fieldName: string) => {
@@ -40,15 +47,6 @@ export default function Fieldset({ namePrefix = '' }: FieldsetProps) {
     },
     [namePrefix]
   )
-
-  const getNestedError = (path: string) => {
-    const keys = path.split('.')
-    let error: any = formState.errors
-    for (const key of keys) {
-      error = error?.[key]
-    }
-    return error
-  }
 
   useEffect(() => {
     const subscription = watch((_, { name: changedName }) => {
@@ -161,7 +159,8 @@ export default function Fieldset({ namePrefix = '' }: FieldsetProps) {
 
   return (
     <>
-      <AddressAutocomplete
+      {/* TODO: TEMP FIX - REVERTIR CUANDO MAPS FUNCIONE */}
+      {/* <AddressAutocomplete
         onAddressSelect={(details: GooglePlaceDetails) => {
           const direccionSimple = details.direccion
 
@@ -217,11 +216,76 @@ export default function Fieldset({ namePrefix = '' }: FieldsetProps) {
         label="Ubicación de la playa"
         placeholder="Buscar dirección de la playa..."
         error={
-          getNestedError(getFieldName('addressSelected'))?.message as string
+          (_formState.errors as any)?.[getFieldName('addressSelected')]
+            ?.message as string
         }
         displayAddress={watch(getFieldName('displayAddress'))}
         latitude={watch(getFieldName('latitud'))}
         longitude={watch(getFieldName('longitud'))}
+      /> */}
+
+      <FormField
+        control={control}
+        name={getFieldName('direccion')}
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Dirección de la playa</FormLabel>
+            <FormControl>
+              <Input
+                placeholder="Ingrese la dirección manualmente..."
+                {...field}
+                onChange={(e) => {
+                  field.onChange(e)
+                  // TODO: TEMP FIX - REVERTIR CUANDO MAPS FUNCIONE
+                  // Establecer valores por defecto cuando el usuario escribe la dirección
+                  const direccionValue = e.target.value
+                  if (direccionValue.trim() !== '') {
+                    const currentLatitud = getValues(getFieldName('latitud'))
+                    const currentLongitud = getValues(getFieldName('longitud'))
+                    const currentCiudad = getValues(getFieldName('ciudad'))
+                    const currentProvincia = getValues(
+                      getFieldName('provincia')
+                    )
+
+                    if (
+                      !currentLatitud ||
+                      currentLatitud === 0 ||
+                      !currentLongitud ||
+                      currentLongitud === 0
+                    ) {
+                      setValue(getFieldName('latitud') as any, -34.603722, {
+                        shouldValidate: false,
+                        shouldDirty: false
+                      })
+                      setValue(getFieldName('longitud') as any, -58.381592, {
+                        shouldValidate: false,
+                        shouldDirty: false
+                      })
+                    }
+                    if (!currentCiudad || currentCiudad.trim() === '') {
+                      setValue(getFieldName('ciudad') as any, 'Buenos Aires', {
+                        shouldValidate: false,
+                        shouldDirty: false
+                      })
+                    }
+                    if (!currentProvincia || currentProvincia.trim() === '') {
+                      setValue(
+                        getFieldName('provincia') as any,
+                        'Ciudad Autónoma de Buenos Aires',
+                        {
+                          shouldValidate: false,
+                          shouldDirty: false
+                        }
+                      )
+                    }
+                  }
+                  trigger(getFieldName('direccion'))
+                }}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
       />
 
       {/* Campos ocultos para incluir en FormData */}
