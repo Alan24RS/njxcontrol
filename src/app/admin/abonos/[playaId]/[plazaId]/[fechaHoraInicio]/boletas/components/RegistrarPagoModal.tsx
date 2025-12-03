@@ -3,6 +3,7 @@
 import {
   startTransition,
   useActionState,
+  useCallback,
   useEffect,
   useMemo,
   useRef
@@ -77,10 +78,10 @@ export default function RegistrarPagoModal({
   onSuccess
 }: RegistrarPagoModalProps) {
   const isModalOpen = isOpen ?? open ?? false
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     if (onClose) onClose()
     if (onOpenChange) onOpenChange(false)
-  }
+  }, [onClose, onOpenChange])
 
   const [formState, formAction, pending] = useActionState(
     registrarPagoBoletaAction,
