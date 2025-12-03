@@ -32,7 +32,7 @@ export async function getUserPlayasAction(): Promise<
 > {
   // Llamar directamente a getPlayas sin unstable_cache
   return (await getPlayas({
-    select: 'playa_id, nombre, direccion, descripcion',
+    select: 'playa_id, nombre, direccion, descripcion, horario',
     limit: 9999
   })) as ApiResponse<PlayaBasica[]>
 }

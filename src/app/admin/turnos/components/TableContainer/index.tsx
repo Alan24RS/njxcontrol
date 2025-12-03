@@ -94,7 +94,44 @@ export default function TableContainer({ params }: TableContainerProps) {
     pageSize: response.data.length || 1
   }
 
+  // Calcular total de horas trabajadas
+  const totalMinutosTrabajados = response.data.reduce((acc, turno) => {
+    return acc + (turno.duracionMinutos || 0)
+  }, 0)
+
+  const totalHoras = Math.floor(totalMinutosTrabajados / 60)
+  const totalMinutos = totalMinutosTrabajados % 60
+
   return (
-    <DataTable data={response.data} pagination={pagination} columns={columns} />
+    <div className="flex flex-col gap-4">
+      {totalMinutosTrabajados > 0 && (
+        <div className="bg-card text-card-foreground rounded-lg border p-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-muted-foreground text-sm font-medium">
+                Total de horas trabajadas
+              </p>
+              <p className="text-2xl font-bold">
+                {totalHoras}h {totalMinutos}min
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-muted-foreground text-sm">
+                {response.data.filter((t) => t.duracionMinutos).length} turnos
+                completados
+              </p>
+              <p className="text-muted-foreground text-xs">
+                de {response.data.length} totales
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+      <DataTable
+        data={response.data}
+        pagination={pagination}
+        columns={columns}
+      />
+    </div>
   )
 }

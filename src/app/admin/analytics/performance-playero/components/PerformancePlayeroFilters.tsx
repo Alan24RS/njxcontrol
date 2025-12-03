@@ -59,6 +59,9 @@ export function PerformancePlayeroFilters({
   const [incluirDiasSinActividad, setIncluirDiasSinActividad] = useState(
     searchParams.get('incluir_dias_sin_actividad') === 'true'
   )
+  const [excluirIrregulares, setExcluirIrregulares] = useState(
+    searchParams.get('excluir_irregulares') === 'true'
+  )
 
   const aplicarFiltros = () => {
     const params = new URLSearchParams()
@@ -68,6 +71,7 @@ export function PerformancePlayeroFilters({
     if (playeroId && playeroId !== 'all') params.set('playero_id', playeroId)
     if (incluirDiasSinActividad)
       params.set('incluir_dias_sin_actividad', 'true')
+    if (excluirIrregulares) params.set('excluir_irregulares', 'true')
     // Flag to indicate user explicitly applied filters
     params.set('aplicar', '1')
 
@@ -80,6 +84,7 @@ export function PerformancePlayeroFilters({
     setPlayaId('all')
     setPlayeroId('all')
     setIncluirDiasSinActividad(false)
+    setExcluirIrregulares(false)
     router.push(pathname)
   }
 
@@ -218,20 +223,38 @@ export function PerformancePlayeroFilters({
       </div>
 
       {/* Opción: Incluir días sin actividad */}
-      <div className="mt-4 flex items-center space-x-2">
-        <Checkbox
-          id="incluir-dias-sin-actividad"
-          checked={incluirDiasSinActividad}
-          onCheckedChange={(checked) =>
-            setIncluirDiasSinActividad(checked === true)
-          }
-        />
-        <label
-          htmlFor="incluir-dias-sin-actividad"
-          className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-        >
-          Incluir días sin actividad en promedio diario
-        </label>
+      <div className="mt-4 space-y-3">
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="incluir-dias-sin-actividad"
+            checked={incluirDiasSinActividad}
+            onCheckedChange={(checked) =>
+              setIncluirDiasSinActividad(checked === true)
+            }
+          />
+          <label
+            htmlFor="incluir-dias-sin-actividad"
+            className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+          >
+            Incluir días sin actividad en promedio diario
+          </label>
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="excluir-irregulares"
+            checked={excluirIrregulares}
+            onCheckedChange={(checked) =>
+              setExcluirIrregulares(checked === true)
+            }
+          />
+          <label
+            htmlFor="excluir-irregulares"
+            className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+          >
+            Excluir turnos irregulares (menos de 1 hora o más de 12 horas)
+          </label>
+        </div>
       </div>
     </div>
   )

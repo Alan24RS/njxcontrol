@@ -26,6 +26,7 @@ type SearchParams = {
   playa_id?: string
   playero_id?: string
   incluir_dias_sin_actividad?: string
+  excluir_irregulares?: string
   aplicar?: string
 }
 
@@ -67,7 +68,8 @@ export default async function PerformancePlayeroPage({
       fecha_hasta: params.fecha_hasta,
       playa_id: params.playa_id,
       playero_id: params.playero_id,
-      incluir_dias_sin_actividad: params.incluir_dias_sin_actividad === 'true'
+      incluir_dias_sin_actividad: params.incluir_dias_sin_actividad === 'true',
+      excluir_irregulares: params.excluir_irregulares === 'true'
     })
     fetchedRows = result.data
     error = result.error

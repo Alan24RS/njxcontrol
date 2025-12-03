@@ -12,7 +12,7 @@ export const getPlayasBasicas = unstable_cache(
     args?: GetPlayasParams
   } = {}): Promise<ApiResponse<PlayaBasica[]>> =>
     (await getPlayas({
-      select: 'playa_id, nombre, direccion, descripcion',
+      select: 'playa_id, nombre, direccion, descripcion, horario',
       ...args
     })) as ApiResponse<PlayaBasica[]>,
   ['playas-basicas'], // cache key

@@ -48,7 +48,8 @@ export const getPerformancePlayero = cache(
           p_fecha_desde: args.fecha_desde || null,
           p_fecha_hasta: args.fecha_hasta || null,
           p_playa_id: args.playa_id || null,
-          p_playero_id: args.playero_id || null
+          p_playero_id: args.playero_id || null,
+          p_excluir_irregulares: args.excluir_irregulares || false
         }
       )
 
