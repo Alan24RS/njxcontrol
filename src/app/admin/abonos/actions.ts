@@ -75,7 +75,11 @@ export async function finalizarAbonoAction(
 
 type RegistrarPagoFormState = {
   success: boolean
-  data?: any
+  data?: {
+    montoPagadoTotal: number
+    deudaPendiente: number
+    estadoBoleta: string
+  }
   error?: string
   fields?: Record<string, string>
   errors?: Record<string, string[]>
