@@ -52,6 +52,7 @@ export type GetPerformancePlayeroParams = PaginationParams & {
   playa_id?: string
   playero_id?: string
   incluir_dias_sin_actividad?: boolean
+  excluir_irregulares?: boolean
 }
 
 /**

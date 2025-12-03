@@ -78,12 +78,12 @@ export type PlayaPublica = {
 
 export type RawPlayaBasica = Pick<
   Playa,
-  'id' | 'nombre' | 'direccion' | 'descripcion'
+  'id' | 'nombre' | 'direccion' | 'descripcion' | 'horario'
 >
 
 export type PlayaBasica = Pick<
   Playa,
-  'id' | 'nombre' | 'direccion' | 'descripcion'
+  'id' | 'nombre' | 'direccion' | 'descripcion' | 'horario'
 >
 
 export type Ciudad = {

@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQueryClient } from '@tanstack/react-query'
+import { AlertCircle } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { updateTurnoAction } from '@/app/admin/turnos/actions'
@@ -21,14 +22,16 @@ import {
   FormMessage,
   Input
 } from '@/components/ui'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Spinner } from '@/components/ui/spinner'
 import {
   type CerrarTurnoFormData,
   crearCerrarTurnoSchema
 } from '@/schemas/turnos'
 import { getPlayas } from '@/services/playas/getPlayas'
-import { getTurno } from '@/services/turnos'
+import { getRecaudacionTurno, getTurno } from '@/services/turnos'
 import { useSelectedPlaya } from '@/stores'
+import { formatCurrency } from '@/utils/formatters'
 
 function getCurrentDateTimeLocal() {
   const now = new Date()
@@ -42,6 +45,8 @@ export default function CerrarTurnoForm() {
   const [horaInicioTurno, setHoraInicioTurno] = useState<string | null>(null)
   const [efectivoInicial, setEfectivoInicial] = useState<number>(0)
   const [buscandoTurno, setBuscandoTurno] = useState(true)
+  const [recaudacionReal, setRecaudacionReal] = useState<number | null>(null)
+  const [loadingRecaudacion, setLoadingRecaudacion] = useState(false)
   const router = useRouter()
   const queryClient = useQueryClient()
   const { selectedPlaya, setSelectedPlaya, isLoading } = useSelectedPlaya()
@@ -112,6 +117,17 @@ export default function CerrarTurnoForm() {
 
         setHoraInicioTurno(turnoData.fechaHoraIngreso.toISOString())
         setEfectivoInicial(turnoData.efectivoInicial ?? 0)
+
+        // Obtener recaudación real del turno
+        setLoadingRecaudacion(true)
+        const recaudacionResponse = await getRecaudacionTurno(
+          turnoData.playaId,
+          turnoData.fechaHoraIngreso.toISOString()
+        )
+        if (recaudacionResponse.data !== null) {
+          setRecaudacionReal(recaudacionResponse.data)
+        }
+        setLoadingRecaudacion(false)
       } catch (err) {
         console.error(err)
         toast.error('Error al verificar el turno activo.')
@@ -149,6 +165,16 @@ export default function CerrarTurnoForm() {
 
     const fechaInicio = new Date(horaInicioTurno)
     const fechaSalidaDate = new Date(data.fecha_hora_salida)
+    const ahora = new Date()
+
+    if (fechaSalidaDate > ahora) {
+      toast.error('La hora de salida no puede ser posterior a la hora actual.')
+      form.setError('fecha_hora_salida', {
+        type: 'manual',
+        message: 'No se permite una fecha/hora futura'
+      })
+      return
+    }
 
     if (fechaSalidaDate <= fechaInicio) {
       toast.error('La hora de salida debe ser posterior a la hora de ingreso.')
@@ -253,6 +279,7 @@ export default function CerrarTurnoForm() {
               <FormControl>
                 <Input
                   type="datetime-local"
+                  max={getCurrentDateTimeLocal()}
                   {...field}
                   value={
                     typeof field.value === 'string'
@@ -261,6 +288,9 @@ export default function CerrarTurnoForm() {
                   }
                 />
               </FormControl>
+              <p className="text-muted-foreground mt-1 text-xs">
+                No se permite una fecha u hora posterior a la actual
+              </p>
               <FormMessage />
             </FormItem>
           )}
@@ -338,6 +368,35 @@ export default function CerrarTurnoForm() {
                 : 'Faltante de efectivo'}
             </p>
           </FormItem>
+        )}
+
+        {recaudacionReal !== null && !loadingRecaudacion && (
+          <div className="space-y-3">
+            <div className="bg-muted rounded-md p-4">
+              <p className="text-sm font-medium">Recaudación del turno</p>
+              <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                {formatCurrency(recaudacionReal)}
+              </p>
+            </div>
+
+            {efectivoFinal > 0 &&
+              Math.abs(efectivoFinal - recaudacionReal) > 0.01 && (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    <p className="font-semibold">
+                      Diferencia detectada con la recaudación
+                    </p>
+                    <p className="text-sm">
+                      El efectivo final ({formatCurrency(efectivoFinal)})
+                      difiere de la recaudación registrada (
+                      {formatCurrency(recaudacionReal)}). Verifica que todos los
+                      pagos estén registrados correctamente.
+                    </p>
+                  </AlertDescription>
+                </Alert>
+              )}
+          </div>
         )}
 
         <div className="flex gap-4 pt-4">

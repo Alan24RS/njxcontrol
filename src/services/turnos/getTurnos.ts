@@ -58,19 +58,28 @@ export const getTurnos = cache(
     const playaIds = [...new Set(data.map((t) => t.playa_id))]
     const { data: playasData } = await supabase
       .from('playa')
-      .select('playa_id, nombre, direccion')
+      .select('playa_id, nombre, direccion, horario')
       .in('playa_id', playaIds)
 
     // Crear un mapa de playas para fácil acceso
-    const playasMap = new Map(playasData?.map((p) => [p.playa_id, p]) || [])
+    const playasMap = new Map(
+      playasData?.map((p) => [
+        p.playa_id,
+        { nombre: p.nombre, direccion: p.direccion, horario: p.horario }
+      ]) || []
+    )
 
     // Transformar turnos y agregar información de playa
     const transformedData = transformListTurno(data as unknown as RawTurno[])
-    const dataWithPlayas = transformedData.map((turno) => ({
-      ...turno,
-      playaNombre: playasMap.get(turno.playaId)?.nombre || undefined,
-      playaDireccion: playasMap.get(turno.playaId)?.direccion || undefined
-    }))
+    const dataWithPlayas = transformedData.map((turno) => {
+      const playaInfo = playasMap.get(turno.playaId)
+      return {
+        ...turno,
+        playaNombre: playaInfo?.nombre || undefined,
+        playaDireccion: playaInfo?.direccion || undefined,
+        playaHorario: playaInfo?.horario || undefined
+      }
+    })
 
     // Obtener filtros si se solicita
     let filters = undefined

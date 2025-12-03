@@ -25,4 +25,7 @@ export interface Turno {
   efectivoFinal?: number
   playaNombre?: string
   playaDireccion?: string
+  playaHorario?: string
+  duracionMinutos?: number
+  duracionFormateada?: string
 }

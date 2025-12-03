@@ -163,7 +163,8 @@ export default function CompletePlayaSetupModal({
             id: result.playaId,
             nombre: data.playa.nombre || null,
             direccion: data.playa.direccion,
-            descripcion: data.playa.descripcion || ''
+            descripcion: data.playa.descripcion || '',
+            horario: data.playa.horario || ''
           }
 
           setSelectedPlaya(newPlaya)

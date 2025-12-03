@@ -47,6 +47,19 @@ jobs:
         with:
           version: latest
 
+      - name: 🔄 Sync migrations with remote database
+        run: |
+          echo "🔄 Syncing local migrations with remote database..."
+          # Link to the remote project using the ref from NEXT_PUBLIC_SUPABASE_URL
+          export SUPABASE_URL="$NEXT_PUBLIC_SUPABASE_URL"
+          supabase link --project-ref $(echo $NEXT_PUBLIC_SUPABASE_URL | sed 's/.*\/\/\([^.]*\).*/\1/')
+          # Pull remote schema/migrations to align local state
+          supabase db pull
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+
       - name: 🔍 Verify environment variables
         run: |
           echo "🔍 Checking environment variables..."

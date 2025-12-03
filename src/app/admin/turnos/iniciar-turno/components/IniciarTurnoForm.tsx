@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form'
 import { useRouter } from 'next/navigation'
 
 import { useQueryClient } from '@tanstack/react-query'
+import { AlertTriangle } from 'lucide-react'
 import { toast } from 'sonner'
 
 import {
@@ -19,12 +20,155 @@ import {
   FormMessage,
   Input
 } from '@/components/ui'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Spinner } from '@/components/ui/spinner'
 import { iniciarTurno } from '@/services/turnos'
 import { useSelectedPlaya } from '@/stores'
 
 type IniciarTurnoFormData = {
   efectivoInicial: number
+}
+
+// Helper para parsear horarios de playa (formato: "LUN,MAR 08:00-20:00 | MIE-DOM 06:00-22:00")
+function parseHorarioPlaya(horario: string): Array<{
+  dias: string[]
+  apertura: string
+  cierre: string
+}> {
+  const schedules: Array<{ dias: string[]; apertura: string; cierre: string }> =
+    []
+  const segments = horario.split('|').map((s) => s.trim())
+
+  for (const seg of segments) {
+    const match = seg.match(
+      /((?:LUN|MAR|MI[ÉE]|JUE|VIE|S[ÁA]B|DOM)(?:,(?:LUN|MAR|MI[ÉE]|JUE|VIE|S[ÁA]B|DOM))*)\s+(\d{2}:\d{2})\s*-\s*(\d{2}:\d{2})/i
+    )
+    if (match) {
+      const diasStr = match[1]
+      const apertura = match[2]
+      const cierre = match[3]
+      const dias = diasStr.split(',').map((d) => d.trim().toUpperCase())
+      schedules.push({ dias, apertura, cierre })
+    }
+  }
+
+  return schedules
+}
+
+function getDayKey(date: Date): string {
+  const days = ['DOM', 'LUN', 'MAR', 'MIE', 'JUE', 'VIE', 'SAB']
+  return days[date.getDay()]
+}
+
+function timeToMinutes(time: string): number {
+  const [h, m] = time.split(':').map(Number)
+  return h * 60 + m
+}
+
+function formatTimeDifference(minutes: number): string {
+  const hours = Math.floor(minutes / 60)
+  const mins = minutes % 60
+
+  if (hours > 0 && mins > 0) {
+    return `${hours}h ${mins}min`
+  } else if (hours > 0) {
+    return `${hours}h`
+  } else {
+    return `${mins}min`
+  }
+}
+
+function checkScheduleCompliance(
+  horario: string,
+  now: Date
+): { hasWarning: boolean; message: string } {
+  const schedules = parseHorarioPlaya(horario)
+  if (schedules.length === 0) {
+    // No se pudo parsear, sin advertencia
+    return { hasWarning: false, message: '' }
+  }
+
+  const dayKey = getDayKey(now)
+  const currentMinutes = now.getHours() * 60 + now.getMinutes()
+
+  // Buscar si hay un horario para el día actual
+  const todaySchedules = schedules.filter((s) => s.dias.includes(dayKey))
+  if (todaySchedules.length === 0) {
+    return {
+      hasWarning: true,
+      message: `Hoy (${dayKey}) no está en el horario de actividad de la playa. Iniciar el turno fuera del horario establecido puede generar inconsistencias en tu historial de uso.`
+    }
+  }
+
+  // Verificar si está dentro de algún horario del día
+  let closestBefore: {
+    schedule: (typeof todaySchedules)[0]
+    diff: number
+  } | null = null
+  let closestAfter: {
+    schedule: (typeof todaySchedules)[0]
+    diff: number
+  } | null = null
+  let isWithinSchedule = false
+
+  for (const schedule of todaySchedules) {
+    const aperturaMin = timeToMinutes(schedule.apertura)
+    const cierreMin = timeToMinutes(schedule.cierre)
+
+    // Dentro del horario
+    if (currentMinutes >= aperturaMin && currentMinutes <= cierreMin) {
+      isWithinSchedule = true
+      break
+    }
+
+    // Antes de apertura
+    if (currentMinutes < aperturaMin) {
+      const diff = aperturaMin - currentMinutes
+      if (!closestBefore || diff < closestBefore.diff) {
+        closestBefore = { schedule, diff }
+      }
+    }
+
+    // Después de cierre
+    if (currentMinutes > cierreMin) {
+      const diff = currentMinutes - cierreMin
+      if (!closestAfter || diff < closestAfter.diff) {
+        closestAfter = { schedule, diff }
+      }
+    }
+  }
+
+  // Si está dentro del horario, sin advertencia
+  if (isWithinSchedule) {
+    return { hasWarning: false, message: '' }
+  }
+
+  // Antes de la apertura
+  if (closestBefore) {
+    const timeLeft = formatTimeDifference(closestBefore.diff)
+    return {
+      hasWarning: true,
+      message: `Estás iniciando el turno antes del horario de apertura (${closestBefore.schedule.apertura}). Faltan ${timeLeft} para la apertura. Esto puede generar inconsistencias en tu historial de uso.`
+    }
+  }
+
+  // Después del cierre
+  if (closestAfter) {
+    const timeExceeded = formatTimeDifference(closestAfter.diff)
+    return {
+      hasWarning: true,
+      message: `Estás iniciando el turno después del horario de cierre (${closestAfter.schedule.cierre}). Han pasado ${timeExceeded} desde el cierre. Esto puede generar inconsistencias en tu historial de uso.`
+    }
+  }
+
+  // Caso general fuera de horario
+  const horasTxt = todaySchedules
+    .map((s) => s.apertura + '-' + s.cierre)
+    .join(', ')
+  return {
+    hasWarning: true,
+    message: `El horario de la playa para hoy es ${horasTxt}. Estás iniciando el turno fuera del horario establecido, lo cual puede generar inconsistencias en tu historial de uso.`
+  }
 }
 
 export default function IniciarTurnoForm() {
@@ -81,6 +225,12 @@ export default function IniciarTurnoForm() {
     )
   }
 
+  // Verificar horario al cargar el componente
+  const scheduleCheck = checkScheduleCompliance(
+    selectedPlaya.horario || '',
+    new Date()
+  )
+
   return (
     <Form {...form}>
       <form
@@ -102,6 +252,21 @@ export default function IniciarTurnoForm() {
             La playa se selecciona desde el panel lateral
           </p>
         </FormItem>
+
+        {scheduleCheck.hasWarning && (
+          <Alert
+            variant="default"
+            className="border-yellow-500 bg-yellow-50 dark:bg-yellow-950/20"
+          >
+            <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-500" />
+            <AlertTitle className="text-yellow-800 dark:text-yellow-300">
+              Advertencia de horario
+            </AlertTitle>
+            <AlertDescription className="text-yellow-700 dark:text-yellow-400">
+              {scheduleCheck.message}
+            </AlertDescription>
+          </Alert>
+        )}
 
         <FormField
           control={control}
