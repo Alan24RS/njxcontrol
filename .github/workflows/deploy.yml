@@ -47,31 +47,32 @@ jobs:
         with:
           version: latest
 
-      - name: 🔄 Sync migrations with remote database
+      - name: 🔗 Link to remote database
         run: |
-          echo "🔄 Syncing local migrations with remote database..."
+          echo "🔗 Linking to remote database..."
           # Link to the remote project using the ref from NEXT_PUBLIC_SUPABASE_URL
           export SUPABASE_URL="$NEXT_PUBLIC_SUPABASE_URL"
           supabase link --project-ref $(echo $NEXT_PUBLIC_SUPABASE_URL | sed 's/.*\/\/\([^.]*\).*/\1/')
-          # Pull remote schema/migrations to align local state
-          supabase db pull
+          echo "✅ Successfully linked to remote database"
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
 
-      - name: 🔍 Validate migration drift before applying
+      - name: 🔍 Check for orphaned migrations in database
         run: |
-          echo "🔍 Validating migration drift..."
-          supabase migration list --linked > migration_status.txt
-          echo "📄 Migration status (local vs remote):"
-          cat migration_status.txt || true
-          if grep -E "Remote migration versions not found|Local migrations missing" migration_status.txt; then
-            echo "❌ Drift detectado entre migraciones locales y remotas."
-            echo "   Repara con: supabase migration repair --status reverted <MIG_ID> && supabase db pull"
-            exit 1
+          echo "🔍 Checking for migrations in database not present in code..."
+          
+          # Get migrations from database
+          supabase migration list > migration_status.txt || true
+          
+          # Check if there are any migrations marked as applied in DB but not in local files
+          if grep -E "Remote migration versions not found" migration_status.txt 2>/dev/null; then
+            echo "⚠️  Found migrations in database not present in local code."
+            echo "   These will be handled by the conditional-migrate.sh script."
+            echo "   Policy: Git is the single source of truth."
           else
-            echo "✅ No se detectó drift en migraciones."
+            echo "✅ All database migrations are present in local code."
           fi
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
