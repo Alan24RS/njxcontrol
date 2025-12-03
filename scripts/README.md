@@ -218,6 +218,42 @@ El script te guiará, pero básicamente:
 3. Crea nuevas con `supabase migration new nombre`
 4. Pega tu SQL en los nuevos archivos
 
+#### `sync-migrations.ps1` ⭐ NUEVO
+
+**Script de verificación y diagnóstico** para sincronización de migraciones.
+
+**Qué hace**:
+
+- 📋 Lista el historial completo de migraciones
+- 🔍 Detecta desincronización entre local y remoto
+- 💡 Sugiere comandos de reparación automáticamente
+- ✅ Confirma cuando todo está sincronizado
+
+**Uso**: `.\scripts\sync-migrations.ps1`
+
+**Output ejemplo**:
+
+```
+🔄 Verificando sincronización de migraciones...
+
+📋 Verificando estado actual...
+[Lista de migraciones...]
+
+🔍 Verificando cambios pendientes...
+✅ Base de datos remota sincronizada correctamente
+
+📝 Tip: Ejecuta 'supabase db push' para aplicar migraciones pendientes
+```
+
+**Cuándo usarlo**:
+
+- Después de hacer `git pull` con nuevas migraciones
+- Antes de crear una nueva migración
+- Cuando recibes errores de "migration history does not match"
+- Para verificar que el deploy será exitoso
+
+**Documentación completa**: [`../docs/MIGRATION_SYNC_GUIDE.md`](../docs/MIGRATION_SYNC_GUIDE.md)
+
 ### Scripts de Seed
 
 #### `db-seed.ts`
@@ -334,6 +370,9 @@ pnpm db:seed:reportes # ⭐ NUEVO: Datos históricos para reportes
 # Limpieza de datos de seed
 pnpm db:cleanup --prod  # Limpiar seed en producción
 pnpm db:cleanup --local # Limpiar seed en local
+
+# ⭐ Verificar sincronización de migraciones
+.\scripts\sync-migrations.ps1
 ```
 
 ### 💡 Comando Recomendado Antes de Deploy

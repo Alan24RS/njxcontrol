@@ -26,7 +26,7 @@ import {
   calculateProratedAmount,
   getDaysInMonth,
   getDaysUntilEndOfMonth
-} from '@/services/abonos'
+} from '@/services/abonos/calculateProratedAmount'
 import { useSelectedPlaya } from '@/stores/useSelectedPlaya'
 
 export default function PagoStep() {

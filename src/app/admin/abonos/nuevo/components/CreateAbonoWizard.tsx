@@ -11,7 +11,7 @@ import { toast } from 'sonner'
 
 import { Gateway, Step } from '@/components/ui'
 import { type CreateAbonoFormData, createAbonoSchema } from '@/schemas/abono'
-import { calculateProratedAmount } from '@/services/abonos'
+import { calculateProratedAmount } from '@/services/abonos/calculateProratedAmount'
 import { getTurno } from '@/services/turnos'
 import { useSelectedPlaya } from '@/stores'
 
