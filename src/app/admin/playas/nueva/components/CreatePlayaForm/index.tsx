@@ -20,6 +20,13 @@ type FormState = {
   errors?: Record<string, string[]>
 }
 
+const DEFAULT_LOCATION = {
+  latitud: -34.603722,
+  longitud: -58.381592,
+  ciudad: 'Buenos Aires',
+  provincia: 'Ciudad Autónoma de Buenos Aires'
+} as const
+
 export const DEFAULT_VALUES: CreatePlayaRequest = {
   nombre: '',
   descripcion: '',
@@ -105,20 +112,20 @@ export default function CreatePlayaForm() {
           const provincia = getValues('provincia')
 
           if (!latitud || latitud === 0 || !longitud || longitud === 0) {
-            setValue('latitud', -34.603722, {
+            setValue('latitud', DEFAULT_LOCATION.latitud, {
               shouldValidate: false
             })
-            setValue('longitud', -58.381592, {
+            setValue('longitud', DEFAULT_LOCATION.longitud, {
               shouldValidate: false
             })
           }
           if (!ciudad || ciudad.trim() === '') {
-            setValue('ciudad', 'Buenos Aires', {
+            setValue('ciudad', DEFAULT_LOCATION.ciudad, {
               shouldValidate: false
             })
           }
           if (!provincia || provincia.trim() === '') {
-            setValue('provincia', 'Ciudad Autónoma de Buenos Aires', {
+            setValue('provincia', DEFAULT_LOCATION.provincia, {
               shouldValidate: false
             })
           }
