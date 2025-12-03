@@ -160,7 +160,7 @@ export default function RegistrarPagoModal({
         }
       })
     }
-  }, [formState, watchMonto, onSuccess, onClose, form])
+  }, [formState, watchMonto, onSuccess, handleClose, form])
 
   useEffect(() => {
     if (!isOpen) {
