@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "prebuild": "pnpm lint && pnpm typecheck && bash scripts/conditional-migrate.sh",
+    "prebuild": "pnpm lint && pnpm typecheck",
     "build": "next build",
     "start": "next start",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx --max-warnings=0",
