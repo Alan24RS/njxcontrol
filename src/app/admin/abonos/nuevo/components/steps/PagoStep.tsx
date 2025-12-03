@@ -130,9 +130,9 @@ export default function PagoStep() {
           </div>
 
           <p className="text-muted-foreground text-sm">
-            El último día de este mes se generará automáticamente la boleta del
-            próximo mes por ${tarifaMensual.toLocaleString()}, con vencimiento a
-            15 días. Este proceso se repetirá mensualmente.
+            El día 1 de cada mes se generará automáticamente la boleta mensual
+            por ${tarifaMensual.toLocaleString()}, con vencimiento a 15 días.
+            Este proceso se repetirá mensualmente.
           </p>
         </div>
       </div>
@@ -181,12 +181,13 @@ export default function PagoStep() {
           <ul className="list-inside list-disc space-y-1 text-sm">
             <li>Creación del abono y registro del abonado</li>
             <li>
-              Generación de boleta pagada por ${montoProrrateo.toLocaleString()}
+              Generación y pago de boleta prorrateada por $
+              {montoProrrateo.toLocaleString()}
             </li>
             <li>Registro del pago vinculado a tu turno activo</li>
             <li>Reserva automática de la plaza seleccionada</li>
             <li>
-              Suma de ${montoProrrateo.toLocaleString()} a tu recaudación del
+              Suma de ${montoProrrateo.toLocaleString()} a la recaudación del
               turno
             </li>
           </ul>

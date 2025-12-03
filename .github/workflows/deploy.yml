@@ -60,6 +60,20 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
 
+      - name: 🔍 Validate migration drift before applying
+        run: |
+          echo "🔍 Validating migration drift..."
+          supabase migration list --linked > migration_status.txt
+          echo "📄 Migration status (local vs remote):"
+          cat migration_status.txt || true
+          if grep -E "Remote migration versions not found|Local migrations missing" migration_status.txt; then
+            echo "❌ Drift detectado entre migraciones locales y remotas."
+            echo "   Repara con: supabase migration repair --status reverted <MIG_ID> && supabase db pull"
+            exit 1
+          else
+            echo "✅ No se detectó drift en migraciones."
+          fi
+
       - name: 🔍 Verify environment variables
         run: |
           echo "🔍 Checking environment variables..."

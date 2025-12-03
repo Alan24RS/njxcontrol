@@ -1,6 +1,10 @@
 import type { Metadata } from 'next'
 
-import { ActionContainer, TableContainer } from '@/app/admin/abonos/components'
+import {
+  ActionContainer,
+  NextBillingInfo,
+  TableContainer
+} from '@/app/admin/abonos/components'
 import { PageContainer, PageHeader } from '@/components/layout'
 import { generateSyncMetadata } from '@/utils/metadata'
 
@@ -16,6 +20,7 @@ export default function AbonosPage() {
       <PageHeader title="Abonos" description="Gestión de abonos mensuales">
         <ActionContainer />
       </PageHeader>
+      <NextBillingInfo />
       <TableContainer />
     </PageContainer>
   )

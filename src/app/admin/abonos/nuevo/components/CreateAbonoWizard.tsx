@@ -140,7 +140,7 @@ export default function CreateAbonoWizard() {
       }
 
       toast.success('¡Abono creado exitosamente!', {
-        description: 'La boleta ha sido generada como pendiente de pago'
+        description: 'La boleta prorrateada ha sido pagada y registrada'
       })
 
       await Promise.all([
