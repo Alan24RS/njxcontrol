@@ -16,6 +16,7 @@ export function transformBoleta(
   const deudaPendiente = Number(raw.monto) - Number(raw.monto_pagado || 0)
 
   return {
+    boletaId: raw.boleta_id,
     playaId: raw.playa_id,
     plazaId: raw.plaza_id,
     fechaHoraInicioAbono: new Date(raw.fecha_hora_inicio_abono),

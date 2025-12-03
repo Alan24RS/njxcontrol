@@ -1,0 +1,5 @@
+export { default } from './index'
+export { default as AbonadoTab } from './tabs/AbonadoTab'
+export { default as AbonoTab } from './tabs/AbonoTab'
+export { default as BoletaTab } from './tabs/BoletaTab'
+export { default as PagosTab } from './tabs/PagosTab'

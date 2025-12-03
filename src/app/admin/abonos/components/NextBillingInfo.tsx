@@ -66,26 +66,28 @@ export function NextBillingInfo() {
             <Clock className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
             <div className="flex items-baseline gap-2 font-mono text-lg font-semibold text-gray-900 dark:text-gray-100">
               <div className="flex flex-col items-center">
-                <span className="text-2xl">{timeRemaining.days}</span>
+                <span className="text-2xl" suppressHydrationWarning>
+                  {timeRemaining.days}
+                </span>
                 <span className="text-xs text-gray-500">días</span>
               </div>
               <span className="text-gray-400">:</span>
               <div className="flex flex-col items-center">
-                <span className="text-2xl">
+                <span className="text-2xl" suppressHydrationWarning>
                   {String(timeRemaining.hours).padStart(2, '0')}
                 </span>
                 <span className="text-xs text-gray-500">hs</span>
               </div>
               <span className="text-gray-400">:</span>
               <div className="flex flex-col items-center">
-                <span className="text-2xl">
+                <span className="text-2xl" suppressHydrationWarning>
                   {String(timeRemaining.minutes).padStart(2, '0')}
                 </span>
                 <span className="text-xs text-gray-500">min</span>
               </div>
               <span className="text-gray-400">:</span>
               <div className="flex flex-col items-center">
-                <span className="text-2xl">
+                <span className="text-2xl" suppressHydrationWarning>
                   {String(timeRemaining.seconds).padStart(2, '0')}
                 </span>
                 <span className="text-xs text-gray-500">seg</span>

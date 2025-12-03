@@ -53,6 +53,7 @@ export type AbonoDetalles = AbonoVigente & {
 }
 
 export type RawBoleta = {
+  boleta_id: string
   playa_id: string
   plaza_id: string
   fecha_hora_inicio_abono: string
@@ -64,6 +65,7 @@ export type RawBoleta = {
 }
 
 export type Boleta = {
+  boletaId: string
   playaId: string
   plazaId: string
   fechaHoraInicioAbono: Date

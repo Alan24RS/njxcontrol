@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/table'
 import type { Boleta } from '@/services/abonos/types'
 
+import BoletaDrawer from './BoletaDrawer'
 import RegistrarPagoModal from './RegistrarPagoModal'
 
 interface BoletasTableProps {
@@ -35,6 +36,8 @@ export default function BoletasTable({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedBoleta, setSelectedBoleta] = useState<Boleta | null>(null)
+  const [showRegistrarPago, setShowRegistrarPago] = useState(false)
+  const [drawerOpen, setDrawerOpen] = useState(false)
 
   const fetchBoletas = useCallback(async () => {
     setLoading(true)
@@ -66,6 +69,17 @@ export default function BoletasTable({
   useEffect(() => {
     fetchBoletas()
   }, [fetchBoletas])
+
+  const handleRowClick = (boleta: Boleta) => {
+    setSelectedBoleta(boleta)
+    setDrawerOpen(true)
+  }
+
+  const handleRegistrarPago = (boleta: Boleta, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setSelectedBoleta(boleta)
+    setShowRegistrarPago(true)
+  }
 
   if (loading) {
     return (
@@ -128,7 +142,11 @@ export default function BoletasTable({
           </TableHeader>
           <TableBody>
             {boletas.map((boleta) => (
-              <TableRow key={`${boleta.fechaGeneracion.toISOString()}`}>
+              <TableRow
+                key={`${boleta.fechaGeneracion.toISOString()}`}
+                className="hover:bg-muted/50 cursor-pointer"
+                onClick={() => handleRowClick(boleta)}
+              >
                 <TableCell>{formatDate(boleta.fechaGeneracion)}</TableCell>
                 <TableCell>{formatDate(boleta.fechaVencimiento)}</TableCell>
                 <TableCell className="font-semibold">
@@ -150,7 +168,7 @@ export default function BoletasTable({
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setSelectedBoleta(boleta)}
+                      onClick={(e) => handleRegistrarPago(boleta, e)}
                     >
                       <DollarSign className="mr-1 h-4 w-4" />
                       Registrar pago
@@ -163,13 +181,23 @@ export default function BoletasTable({
         </Table>
       </div>
 
-      {selectedBoleta && (
+      <BoletaDrawer
+        boleta={selectedBoleta}
+        playaId={playaId}
+        plazaId={plazaId}
+        fechaHoraInicio={fechaHoraInicio}
+        open={drawerOpen}
+        onOpenChange={setDrawerOpen}
+        onPaymentRegistered={fetchBoletas}
+      />
+
+      {selectedBoleta && showRegistrarPago && (
         <RegistrarPagoModal
           boleta={selectedBoleta}
-          isOpen={true}
-          onClose={() => setSelectedBoleta(null)}
+          isOpen={showRegistrarPago}
+          onClose={() => setShowRegistrarPago(false)}
           onSuccess={() => {
-            setSelectedBoleta(null)
+            setShowRegistrarPago(false)
             fetchBoletas()
           }}
         />

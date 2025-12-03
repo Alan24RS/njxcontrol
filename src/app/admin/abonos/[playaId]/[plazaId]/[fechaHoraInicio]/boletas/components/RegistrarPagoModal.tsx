@@ -1,7 +1,12 @@
 'use client'
 
-import { startTransition, useEffect, useMemo, useRef } from 'react'
-import { useActionState } from 'react'
+import {
+  startTransition,
+  useActionState,
+  useEffect,
+  useMemo,
+  useRef
+} from 'react'
 import { useForm } from 'react-hook-form'
 
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -52,17 +57,31 @@ const registrarPagoSchema = z.object({
 
 interface RegistrarPagoModalProps {
   boleta: Boleta
-  isOpen: boolean
-  onClose: () => void
+  _playaId?: string
+  _fechaHoraInicio?: string
+  isOpen?: boolean
+  open?: boolean
+  onClose?: () => void
+  onOpenChange?: (open: boolean) => void
   onSuccess: () => void
 }
 
 export default function RegistrarPagoModal({
   boleta,
+  _playaId,
+  _fechaHoraInicio,
   isOpen,
+  open,
   onClose,
+  onOpenChange,
   onSuccess
 }: RegistrarPagoModalProps) {
+  const isModalOpen = isOpen ?? open ?? false
+  const handleClose = () => {
+    if (onClose) onClose()
+    if (onOpenChange) onOpenChange(false)
+  }
+
   const [formState, formAction, pending] = useActionState(
     registrarPagoBoletaAction,
     {
@@ -119,7 +138,7 @@ export default function RegistrarPagoModal({
 
       form.reset()
       onSuccess()
-      onClose()
+      handleClose()
     } else if (formState.error) {
       toast.error('Error al registrar pago', {
         description: formState.error
@@ -197,7 +216,12 @@ export default function RegistrarPagoModal({
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog
+      open={isModalOpen}
+      onOpenChange={(open) => {
+        if (!open) handleClose()
+      }}
+    >
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Registrar pago de boleta</DialogTitle>
