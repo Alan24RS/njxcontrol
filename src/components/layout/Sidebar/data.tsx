@@ -111,7 +111,7 @@ export const playaActual: SidebarItem[] = [
   },
   {
     title: 'Reportes',
-    url: '/admin/reportes',
+    url: '/admin/reportes/playa-actual',
     icon: ChartBar,
     isActive: false,
     roles: [ROL.PLAYERO],
