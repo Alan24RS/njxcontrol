@@ -114,7 +114,10 @@ export async function registrarPagoBoletaAction(
     }
   }
 
-  if (!processedData.fechaHoraInicioAbono || !processedData.fechaGeneracionBoleta) {
+  if (
+    !processedData.fechaHoraInicioAbono ||
+    !processedData.fechaGeneracionBoleta
+  ) {
     return {
       success: false,
       errors: { general: ['Faltan datos de fecha de la boleta'] }
