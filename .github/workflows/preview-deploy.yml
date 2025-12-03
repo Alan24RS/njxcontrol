@@ -143,23 +143,8 @@ jobs:
       - name: 🔧 Install Vercel CLI
         run: npm install --global vercel@latest
 
-      - name: 🔧 Install Supabase CLI
-        uses: supabase/setup-cli@v1
-        with:
-          version: latest
-
-      - name: 🔄 Sync migrations with remote database (preview)
-        run: |
-          echo "🔄 Syncing local migrations with remote database (preview)..."
-          # Link to the remote project using the ref from NEXT_PUBLIC_SUPABASE_URL
-          export SUPABASE_URL="$NEXT_PUBLIC_SUPABASE_URL"
-          supabase link --project-ref $(echo $NEXT_PUBLIC_SUPABASE_URL | sed 's/.*\/\/\([^.]*\).*/\1/')
-          # Pull remote schema/migrations to align local state
-          supabase db pull
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      # Note: Do not sync migrations in preview to avoid mismatches with remote DB
+      # Migrations are detected and only applied on main via deploy.yml
 
       - name: 🔍 Detect database changes
         id: detect-changes
