@@ -44,6 +44,14 @@ export type AbonoVigente = {
   tieneDeuda: boolean
 }
 
+export type AbonoDetalles = AbonoVigente & {
+  fechaFin: Date | null
+  abonadoId: number
+  abonadoEmail: string | null
+  abonadoTelefono: string | null
+  abonadoFechaAlta: Date
+}
+
 export type RawBoleta = {
   playa_id: string
   plaza_id: string
