@@ -154,7 +154,7 @@ export async function registrarPagoBoletaAction(
 
     return {
       success: true,
-      data: result.data
+      data: result.data ?? undefined
     }
   } catch (error) {
     return {
