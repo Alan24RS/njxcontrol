@@ -43,12 +43,28 @@ type RegistrarPagoFormData = {
   metodoPago: string
 }
 
-const registrarPagoSchema = z.object({
-  monto: z
-    .number({ message: 'El monto es requerido' })
-    .positive('El monto debe ser mayor a 0'),
-  metodoPago: z.string({ message: 'Selecciona un método de pago' })
-})
+const createRegistrarPagoSchema = (
+  deudaPendiente: number,
+  metodosActivos: Array<{ metodoPago: string }>
+) =>
+  z
+    .object({
+      monto: z
+        .number({ message: 'El monto es requerido' })
+        .positive('El monto debe ser mayor a 0'),
+      metodoPago: z.string({ message: 'Selecciona un método de pago' })
+    })
+    .refine((data) => data.monto <= deudaPendiente, {
+      message: 'El monto no puede ser mayor a la deuda pendiente',
+      path: ['monto']
+    })
+    .refine(
+      (data) => metodosActivos.some((m) => m.metodoPago === data.metodoPago),
+      {
+        message: 'El método de pago seleccionado no está disponible',
+        path: ['metodoPago']
+      }
+    )
 
 interface RegistrarPagoModalProps {
   boleta: Boleta
@@ -89,6 +105,11 @@ export default function RegistrarPagoModal({
       metodosPagoResponse?.data?.filter((item) => item.estado === 'ACTIVO') ||
       [],
     [metodosPagoResponse]
+  )
+
+  const registrarPagoSchema = useMemo(
+    () => createRegistrarPagoSchema(boleta.deudaPendiente, metodosActivos),
+    [boleta.deudaPendiente, metodosActivos]
   )
 
   const form = useForm<RegistrarPagoFormData>({
@@ -154,29 +175,6 @@ export default function RegistrarPagoModal({
   }, [isOpen, boleta.deudaPendiente, form])
 
   const handleSubmit = (data: RegistrarPagoFormData) => {
-    if (data.monto > boleta.deudaPendiente) {
-      toast.error('El monto no puede ser mayor a la deuda pendiente')
-      return
-    }
-
-    if (data.monto <= 0) {
-      toast.error('El monto debe ser mayor a 0')
-      return
-    }
-
-    if (!data.metodoPago) {
-      toast.error('Selecciona un método de pago')
-      return
-    }
-
-    const metodoValido = metodosActivos.some(
-      (m) => m.metodoPago === data.metodoPago
-    )
-    if (!metodoValido) {
-      toast.error('El método de pago seleccionado no está disponible')
-      return
-    }
-
     const formData = new FormData()
     formData.append('playaId', boleta.playaId)
     formData.append('plazaId', boleta.plazaId)
