@@ -34,7 +34,6 @@ export default function Fieldset({ namePrefix = '' }: FieldsetProps) {
   const {
     control,
     setValue,
-    formState: _formState,
     trigger,
     register,
     watch,
