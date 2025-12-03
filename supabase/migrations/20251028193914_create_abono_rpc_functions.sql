@@ -53,8 +53,9 @@ BEGIN
     AND fecha_hora_inicio = p_fecha_hora_inicio;
 
   UPDATE public.plaza
-  SET estado = 'LIBRE'
-  WHERE plaza_id = p_plaza_id;
+  SET estado = 'ACTIVO'
+  WHERE plaza_id = p_plaza_id
+    AND playa_id = p_playa_id;
 
   SELECT jsonb_build_object(
     'abono_id', jsonb_build_object(

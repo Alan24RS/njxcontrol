@@ -25,7 +25,8 @@ export const labels = {
   tipoPlaza: 'Tipo Plaza',
   vehiculos: 'Vehículos',
   estado: 'Estado',
-  fechaInicio: 'Inicio',
+  fechaInicio: 'Fecha Inicio',
+  fechaFin: 'Fecha Fin',
   fechaVencimiento: 'Vencimiento',
   precioMensual: 'Precio mensual',
   actions: 'Acciones'
@@ -155,6 +156,28 @@ export default function getColumns(): ColumnDef<TableDataType>[] {
             month: '2-digit',
             day: '2-digit'
           })}
+        </CellLink>
+      )
+    },
+    {
+      accessorKey: 'fechaFin',
+      id: 'fecha_fin',
+      meta: labels.fechaFin,
+      enableHiding: true,
+      header: () => (
+        <SortHeader id="fecha_fin" type="string" className="justify-center">
+          {labels.fechaFin}
+        </SortHeader>
+      ),
+      cell: ({ row }) => (
+        <CellLink href={getHref(row.original)} className="justify-center">
+          {row.original.fechaFin
+            ? row.original.fechaFin.toLocaleDateString('es-AR', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+              })
+            : '-'}
         </CellLink>
       )
     },

@@ -86,6 +86,7 @@ export async function getAbonosVigentes(
           playaNombre: abono.playa_nombre || 'Sin nombre',
           plazaId: abono.plaza_id,
           fechaHoraInicio: new Date(abono.fecha_hora_inicio),
+          fechaFin: abono.fecha_fin ? new Date(abono.fecha_fin) : null,
           fechaVencimiento: abono.fecha_vencimiento
             ? new Date(abono.fecha_vencimiento)
             : null,

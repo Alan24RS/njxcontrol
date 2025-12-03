@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useFormContext } from 'react-hook-form'
 
 import { AlertTriangle } from 'lucide-react'
@@ -22,16 +22,10 @@ import {
 import { METODO_PAGO_LABEL } from '@/constants/metodoPago'
 import { useGetMetodosPagoPlaya } from '@/hooks/queries/metodos-pago-playa/getMetodosPagoPlaya'
 import type { CreateAbonoFormData } from '@/schemas/abono'
-import {
-  calculateProratedAmount,
-  getDaysInMonth,
-  getDaysUntilEndOfMonth
-} from '@/services/abonos'
 import { useSelectedPlaya } from '@/stores/useSelectedPlaya'
 
 export default function PagoStep() {
   const { control, watch, setValue } = useFormContext<CreateAbonoFormData>()
-  const [montoProrrateo, setMontoProrrateo] = useState(0)
   const { selectedPlaya } = useSelectedPlaya()
 
   const tarifaMensual = watch('tarifaMensual')
@@ -61,15 +55,10 @@ export default function PagoStep() {
 
   useEffect(() => {
     if (tarifaMensual > 0) {
-      const fechaHoy = new Date()
-      const monto = calculateProratedAmount(tarifaMensual, fechaHoy)
-      setMontoProrrateo(monto)
-      setValue('montoPago', monto)
+      setValue('montoPago', tarifaMensual)
     }
   }, [tarifaMensual, setValue])
 
-  const diasEnMes = getDaysInMonth(new Date())
-  const diasHastaFinDeMes = getDaysUntilEndOfMonth(new Date())
   const fechaActual = new Date()
 
   return (
@@ -113,7 +102,7 @@ export default function PagoStep() {
       </div>
 
       <div className="space-y-4 rounded-lg border bg-blue-50 p-6 dark:bg-blue-950/20">
-        <h3 className="text-lg font-semibold">Cálculo del primer pago</h3>
+        <h3 className="text-lg font-semibold">Pago inicial</h3>
 
         <div className="space-y-3">
           <div className="flex justify-between">
@@ -123,31 +112,24 @@ export default function PagoStep() {
             </span>
           </div>
 
-          <div className="space-y-2 rounded-lg bg-white p-4 text-sm dark:bg-gray-900">
-            <p className="font-medium">Cálculo proporcional:</p>
+          <div className="rounded-lg bg-white p-4 text-sm dark:bg-gray-900">
             <p className="text-muted-foreground">
-              • Días de este mes: {diasEnMes}
-            </p>
-            <p className="text-muted-foreground">
-              • Días restantes de este mes (incluido hoy): {diasHastaFinDeMes}
-            </p>
-            <p className="text-muted-foreground">
-              • Fórmula: (${tarifaMensual} ÷ {diasEnMes}) × {diasHastaFinDeMes}{' '}
-              = ${montoProrrateo.toLocaleString()}
+              El abono se cobra por adelantado. Se debe pagar el mes completo al
+              momento de la creación.
             </p>
           </div>
 
           <div className="flex justify-between border-t pt-3">
             <span className="text-lg font-semibold">Total a pagar hoy:</span>
             <span className="text-lg font-bold text-green-600">
-              ${montoProrrateo.toLocaleString()}
+              ${tarifaMensual.toLocaleString()}
             </span>
           </div>
 
           <p className="text-muted-foreground text-sm">
-            El último día de este mes se generará automáticamente la boleta del
-            próximo mes por ${tarifaMensual.toLocaleString()}, con vencimiento a
-            15 días. Este proceso se repetirá mensualmente.
+            La primera boleta se generará con el precio mensual completo. Las
+            próximas boletas se generarán automáticamente 3 días antes del
+            vencimiento, que será el mismo día del mes siguiente.
           </p>
         </div>
       </div>
@@ -196,12 +178,12 @@ export default function PagoStep() {
           <ul className="list-inside list-disc space-y-1 text-sm">
             <li>Creación del abono y registro del abonado</li>
             <li>
-              Generación de boleta pagada por ${montoProrrateo.toLocaleString()}
+              Generación de boleta pagada por ${tarifaMensual.toLocaleString()}
             </li>
             <li>Registro del pago vinculado a tu turno activo</li>
             <li>Reserva automática de la plaza seleccionada</li>
             <li>
-              Suma de ${montoProrrateo.toLocaleString()} a tu recaudación del
+              Suma de ${tarifaMensual.toLocaleString()} a tu recaudación del
               turno
             </li>
           </ul>

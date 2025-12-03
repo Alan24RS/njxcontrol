@@ -11,7 +11,6 @@ import { toast } from 'sonner'
 
 import { Gateway, Step } from '@/components/ui'
 import { type CreateAbonoFormData, createAbonoSchema } from '@/schemas/abono'
-import { calculateProratedAmount } from '@/services/abonos'
 import type { CreateAbonoResponse } from '@/services/abonos/types'
 import { getTurno } from '@/services/turnos'
 import { useSelectedPlaya } from '@/stores'
@@ -115,11 +114,6 @@ export default function CreateAbonoWizard() {
 
       const fechaHoraInicio = new Date()
 
-      const montoProrrateo = calculateProratedAmount(
-        data.tarifaMensual,
-        fechaHoraInicio
-      )
-
       const result = await createAbonoAction({
         nombre: data.nombre,
         apellido: data.apellido,
@@ -134,7 +128,7 @@ export default function CreateAbonoWizard() {
         turnoPlayeroId: turnoData.playeroId,
         turnoFechaHoraIngreso: turnoData.fechaHoraIngreso,
         metodoPago: data.metodoPago,
-        montoPago: montoProrrateo
+        montoPago: data.tarifaMensual
       })
 
       if (!result.success) {
@@ -182,20 +176,22 @@ export default function CreateAbonoWizard() {
   }
 
   const handleReviewUpdate = (updatedData: {
-    nombre: string
-    apellido: string
-    dni: string
+    nombre?: string
+    apellido?: string
+    dni?: string
     email?: string
     telefono?: string
   }) => {
     if (createdAbonadoData) {
       setCreatedAbonadoData({
         ...createdAbonadoData,
-        abonadoNombre: updatedData.nombre,
-        abonadoApellido: updatedData.apellido,
-        abonadoDni: updatedData.dni,
-        abonadoEmail: updatedData.email || null,
-        abonadoTelefono: updatedData.telefono || null
+        abonadoNombre: updatedData.nombre || createdAbonadoData.abonadoNombre,
+        abonadoApellido:
+          updatedData.apellido || createdAbonadoData.abonadoApellido,
+        abonadoDni: updatedData.dni || createdAbonadoData.abonadoDni,
+        abonadoEmail: updatedData.email ?? createdAbonadoData.abonadoEmail,
+        abonadoTelefono:
+          updatedData.telefono ?? createdAbonadoData.abonadoTelefono
       })
     }
   }

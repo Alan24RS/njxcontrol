@@ -5,15 +5,18 @@ import {
   useActionState,
   useEffect,
   useMemo,
-  useRef
+  useRef,
+  useState
 } from 'react'
 import { useForm } from 'react-hook-form'
 
 import { zodResolver } from '@hookform/resolvers/zod'
+import { Download } from 'lucide-react'
 import { toast } from 'sonner'
 import { z } from 'zod'
 
 import { registrarPagoBoletaAction } from '@/app/admin/abonos/actions'
+import { getAbonoByIdAction } from '@/app/admin/abonos/queries'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -40,8 +43,10 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select'
+import { METODO_PAGO_LABEL } from '@/constants/metodoPago'
 import { useGetMetodosPagoPlaya } from '@/hooks/queries/metodos-pago-playa/getMetodosPagoPlaya'
 import type { Boleta } from '@/services/abonos/types'
+import { generarComprobantePDF } from '@/utils/pdf/generarComprobante'
 
 type RegistrarPagoFormData = {
   monto: number
@@ -77,6 +82,12 @@ export default function RegistrarPagoModal({
 
   const formRef = useRef<HTMLFormElement>(null)
   const processedSuccessRef = useRef(false)
+  const [showSuccess, setShowSuccess] = useState(false)
+  const [pagoData, setPagoData] = useState<{
+    montoPagado: number
+    metodoPago: string
+  } | null>(null)
+  const [abonoData, setAbonoData] = useState<any>(null)
 
   const { data: metodosPagoResponse } = useGetMetodosPagoPlaya(
     {
@@ -109,22 +120,30 @@ export default function RegistrarPagoModal({
   useEffect(() => {
     if (formState.success && !processedSuccessRef.current) {
       processedSuccessRef.current = true
-      const deudaRestante = formState.data?.deudaPendiente || 0
       const montoPagado = watchMonto
+      const metodoPago = form.getValues('metodoPago') || ''
 
-      if (deudaRestante === 0) {
-        toast.success('¡Boleta pagada completamente!', {
-          description: `Se registró un pago de $${montoPagado.toLocaleString()}`
-        })
-      } else {
-        toast.success('Pago registrado exitosamente', {
-          description: `Monto pagado: $${montoPagado.toLocaleString()}. Resta pagar: $${deudaRestante.toLocaleString()}`
-        })
+      setPagoData({
+        montoPagado,
+        metodoPago
+      })
+      setShowSuccess(true)
+
+      const fetchAbonoData = async () => {
+        try {
+          const result = await getAbonoByIdAction(
+            boleta.playaId,
+            boleta.plazaId,
+            boleta.fechaHoraInicioAbono.toISOString()
+          )
+          if (result.data) {
+            setAbonoData(result.data)
+          }
+        } catch (error) {
+          console.error('Error al obtener datos del abono:', error)
+        }
       }
-
-      form.reset()
-      onSuccess()
-      onClose()
+      fetchAbonoData()
     } else if (formState.error) {
       toast.error('Error al registrar pago', {
         description: formState.error
@@ -146,11 +165,22 @@ export default function RegistrarPagoModal({
         }
       })
     }
-  }, [formState, watchMonto, onSuccess, onClose, form])
+  }, [
+    formState,
+    watchMonto,
+    onSuccess,
+    onClose,
+    form,
+    boleta.playaId,
+    boleta.plazaId,
+    boleta.fechaHoraInicioAbono
+  ])
 
   useEffect(() => {
     if (!isOpen) {
       processedSuccessRef.current = false
+      setShowSuccess(false)
+      setPagoData(null)
       form.reset({
         monto: boleta.deudaPendiente,
         metodoPago: undefined
@@ -199,6 +229,127 @@ export default function RegistrarPagoModal({
     startTransition(() => {
       formAction(formData)
     })
+  }
+
+  const handleDownloadPDF = async () => {
+    if (!pagoData || !abonoData) {
+      toast.error('Error', {
+        description:
+          'No se pudo obtener la información necesaria para generar el comprobante'
+      })
+      return
+    }
+
+    try {
+      const vehiculo = abonoData.vehiculos?.[0] || {
+        patente: 'N/A',
+        tipoVehiculo: 'N/A'
+      }
+
+      const periodo = boleta.fechaVencimiento.toLocaleDateString('es-AR', {
+        month: 'long',
+        year: 'numeric'
+      })
+
+      generarComprobantePDF({
+        boleta: {
+          monto: boleta.monto,
+          montoPagado: boleta.montoPagado + pagoData.montoPagado,
+          fechaGeneracion: boleta.fechaGeneracion,
+          fechaVencimiento: boleta.fechaVencimiento,
+          estado: 'PAGADA'
+        },
+        abonado: {
+          nombre: abonoData.abonadoNombre,
+          apellido: abonoData.abonadoApellido,
+          dni: abonoData.abonadoDni,
+          telefono: boleta.abonadoTelefono,
+          email: null
+        },
+        servicio: {
+          playaNombre: 'Estacionamiento',
+          plazaIdentificador: abonoData.plazaIdentificador,
+          tipoPlazaNombre: abonoData.tipoPlazaNombre,
+          vehiculo: {
+            patente: vehiculo.patente,
+            tipoVehiculo: vehiculo.tipoVehiculo
+          },
+          periodo
+        },
+        pago: {
+          fechaPago: new Date(),
+          metodoPago:
+            METODO_PAGO_LABEL[
+              pagoData.metodoPago as keyof typeof METODO_PAGO_LABEL
+            ] || pagoData.metodoPago,
+          montoPagado: pagoData.montoPagado
+        }
+      })
+    } catch (error) {
+      console.error('Error al generar PDF:', error)
+      toast.error('Error', {
+        description: 'No se pudo generar el comprobante PDF'
+      })
+    }
+  }
+
+  const handleClose = () => {
+    if (showSuccess) {
+      onSuccess()
+    }
+    onClose()
+  }
+
+  if (showSuccess && pagoData) {
+    return (
+      <Dialog open={isOpen} onOpenChange={handleClose}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Pago Registrado</DialogTitle>
+            <DialogDescription>
+              El pago se ha registrado exitosamente
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="font-medium">Monto pagado:</span>
+                  <span className="font-semibold">
+                    ${pagoData.montoPagado.toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium">Método de pago:</span>
+                  <span>{pagoData.metodoPago}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium">Deuda restante:</span>
+                  <span>
+                    ${(formState.data?.deudaPendiente || 0).toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={handleClose} type="button">
+              Cerrar
+            </Button>
+            <Button
+              onClick={handleDownloadPDF}
+              type="button"
+              disabled={!abonoData}
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Descargar Comprobante (PDF)
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    )
   }
 
   return (

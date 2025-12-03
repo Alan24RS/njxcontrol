@@ -1,4 +1,3 @@
-export * from './calculateProratedAmount'
 export * from './createAbono'
 export * from './finalizarAbono'
 export * from './getAbonoById'

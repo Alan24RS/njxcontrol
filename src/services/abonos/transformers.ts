@@ -24,7 +24,9 @@ export function transformBoleta(
     monto: Number(raw.monto),
     montoPagado: Number(raw.monto_pagado || 0),
     estado: raw.estado,
-    deudaPendiente
+    deudaPendiente,
+    abonadoNombre: raw.abonado_nombre,
+    abonadoTelefono: raw.abonado_telefono || null
   }
 }
 

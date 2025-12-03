@@ -30,6 +30,7 @@ export type AbonoVigente = {
   playaNombre: string
   plazaId: string
   fechaHoraInicio: Date
+  fechaFin: Date | null
   fechaVencimiento: Date | null
   precioMensual: number
   estado: 'ACTIVO' | 'FINALIZADO' | 'SUSPENDIDO'
@@ -54,6 +55,8 @@ export type RawBoleta = {
   monto: number
   monto_pagado: number
   estado: 'PENDIENTE' | 'PAGADA' | 'VENCIDA'
+  abonado_nombre?: string
+  abonado_telefono?: string | null
 }
 
 export type Boleta = {
@@ -66,6 +69,8 @@ export type Boleta = {
   montoPagado: number
   estado: 'PENDIENTE' | 'PAGADA' | 'VENCIDA'
   deudaPendiente: number
+  abonadoNombre?: string
+  abonadoTelefono?: string | null
 }
 
 export type RawDeudaBoleta = {

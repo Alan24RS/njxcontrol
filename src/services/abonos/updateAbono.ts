@@ -26,13 +26,6 @@ export async function updateAbono(
       rpcParams.p_nueva_patente = params.nuevaPatente.toUpperCase()
     }
 
-    if (
-      params.nuevoTipoVehiculo !== undefined &&
-      params.nuevoTipoVehiculo !== null
-    ) {
-      rpcParams.p_nuevo_tipo_vehiculo = params.nuevoTipoVehiculo
-    }
-
     if (params.nuevaPlazaId !== undefined && params.nuevaPlazaId !== null) {
       rpcParams.p_nueva_plaza_id = params.nuevaPlazaId
     }

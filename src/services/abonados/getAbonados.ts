@@ -7,6 +7,15 @@ import { translateDBError } from '@/utils/errorMessages'
 import { transformListAbonado } from './transformers'
 import type { Abonado, GetAbonadosParams, RawAbonado } from './types'
 
+const sortColumnMap: Record<string, string> = {
+  fechaAlta: 'fecha_alta',
+  nombre: 'nombre',
+  apellido: 'apellido',
+  email: 'email',
+  dni: 'dni',
+  estado: 'estado'
+}
+
 export const getAbonados = async (
   params: GetAbonadosParams = {}
 ): Promise<ApiResponse<Abonado[]>> => {
@@ -22,12 +31,39 @@ export const getAbonados = async (
     playaId
   } = params
 
-  const sortBy = Array.isArray(params.sortBy)
+  const sortByRaw = Array.isArray(params.sortBy)
     ? params.sortBy[0]
-    : params.sortBy || 'fecha_alta'
-  const order = Array.isArray(params.order)
-    ? params.order[0]
-    : params.order || 'desc'
+    : params.sortBy || 'fechaAlta'
+
+  let order: 'asc' | 'desc' = 'desc'
+  if (params.order) {
+    if (Array.isArray(params.order) && params.order[0]) {
+      const orderValue = params.order[0]
+      if (orderValue === 'asc' || orderValue === 'desc') {
+        order = orderValue
+      }
+    } else if (typeof params.order === 'string') {
+      if (params.order === 'asc' || params.order === 'desc') {
+        order = params.order
+      }
+    }
+  }
+
+  let sortBy: string = 'fechaAlta'
+
+  if (typeof sortByRaw === 'string') {
+    if (sortByRaw.includes(' ')) {
+      const parts = sortByRaw.trim().split(/\s+/)
+      sortBy = parts[0]
+      if (parts.length > 1 && (parts[1] === 'asc' || parts[1] === 'desc')) {
+        order = parts[1] as 'asc' | 'desc'
+      }
+    } else {
+      sortBy = sortByRaw
+    }
+  }
+
+  const dbSortColumn = sortColumnMap[sortBy] || 'fecha_alta'
 
   let abonadoIds: number[] = []
   if (playaId) {
@@ -74,11 +110,15 @@ export const getAbonados = async (
     queryBuilder = queryBuilder.in('estado', estado)
   }
 
+  if (dbSortColumn) {
+    queryBuilder = queryBuilder.order(dbSortColumn, {
+      ascending: order === 'asc'
+    })
+  }
+
   const start = (page - 1) * limit
   const end = start + limit - 1
   queryBuilder = queryBuilder.range(start, end)
-
-  queryBuilder = queryBuilder.order(sortBy, { ascending: order === 'asc' })
 
   const { data, error, count } = await queryBuilder
 

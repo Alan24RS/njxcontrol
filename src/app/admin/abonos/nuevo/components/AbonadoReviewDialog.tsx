@@ -32,15 +32,18 @@ const reviewAbonadoSchema = z.object({
   nombre: z
     .string()
     .min(2, 'El nombre debe tener al menos 2 caracteres')
-    .regex(nameRegex, 'El nombre solo puede contener letras'),
+    .regex(nameRegex, 'El nombre solo puede contener letras')
+    .optional(),
   apellido: z
     .string()
     .min(2, 'El apellido debe tener al menos 2 caracteres')
-    .regex(nameRegex, 'El apellido solo puede contener letras'),
+    .regex(nameRegex, 'El apellido solo puede contener letras')
+    .optional(),
   dni: z
     .string()
     .regex(dniRegex, 'El DNI debe tener 7 u 8 números')
-    .transform((val) => val.replace(/\D/g, '')),
+    .transform((val) => val.replace(/\D/g, ''))
+    .optional(),
   email: z
     .string()
     .refine(
@@ -112,9 +115,6 @@ export default function AbonadoReviewDialog({
     try {
       const result = await updateAbonadoAction({
         abonadoId: abonadoData.abonadoId,
-        nombre: data.nombre,
-        apellido: data.apellido,
-        dni: data.dni,
         email: data.email || null,
         telefono: data.telefono || null
       })
@@ -148,10 +148,7 @@ export default function AbonadoReviewDialog({
 
   const hasChanges =
     isEditing &&
-    (currentValues.nombre !== abonadoData.abonadoNombre ||
-      currentValues.apellido !== abonadoData.abonadoApellido ||
-      currentValues.dni !== abonadoData.abonadoDni ||
-      currentValues.email !== (abonadoData.abonadoEmail || '') ||
+    (currentValues.email !== (abonadoData.abonadoEmail || '') ||
       currentValues.telefono !== (abonadoData.abonadoTelefono || ''))
 
   return (
@@ -160,8 +157,9 @@ export default function AbonadoReviewDialog({
         <DialogHeader>
           <DialogTitle>Revisar datos del abonado</DialogTitle>
           <DialogDescription>
-            Revisa los datos del abonado creado. Si encuentras algún error,
-            puedes corregirlo antes de finalizar.
+            Revisa los datos del abonado creado. Solo puedes modificar el email
+            y teléfono. Los datos de identidad (nombre, apellido y DNI) no se
+            pueden modificar.
           </DialogDescription>
         </DialogHeader>
 
@@ -180,8 +178,9 @@ export default function AbonadoReviewDialog({
                     <FormControl>
                       <Input
                         {...field}
-                        disabled={!isEditing || isUpdating}
+                        disabled={true}
                         placeholder="Juan"
+                        readOnly
                       />
                     </FormControl>
                     <FormMessage />
@@ -198,8 +197,9 @@ export default function AbonadoReviewDialog({
                     <FormControl>
                       <Input
                         {...field}
-                        disabled={!isEditing || isUpdating}
+                        disabled={true}
                         placeholder="Pérez"
+                        readOnly
                       />
                     </FormControl>
                     <FormMessage />
@@ -216,8 +216,9 @@ export default function AbonadoReviewDialog({
                     <FormControl>
                       <Input
                         {...field}
-                        disabled={!isEditing || isUpdating}
+                        disabled={true}
                         placeholder="12345678"
+                        readOnly
                       />
                     </FormControl>
                     <FormMessage />

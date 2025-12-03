@@ -114,14 +114,12 @@ export default function EditAbonoDialog({
       plazaId,
       fechaHoraInicio,
       nuevaPatente: null,
-      nuevoTipoVehiculo: null,
       nuevaPlazaId: null,
       observaciones: null
     }
   })
 
   const watchPatente = form.watch('nuevaPatente')
-  const watchTipoVehiculo = form.watch('nuevoTipoVehiculo')
   const patenteOriginal = abonoResponse?.vehiculos[0]?.patente
   const tipoVehiculoOriginal = abonoResponse?.vehiculos[0]?.tipoVehiculo
 
@@ -133,27 +131,19 @@ export default function EditAbonoDialog({
         plazaId,
         fechaHoraInicio,
         nuevaPatente: vehiculoActual?.patente || null,
-        nuevoTipoVehiculo:
-          (vehiculoActual?.tipoVehiculo as
-            | 'AUTOMOVIL'
-            | 'MOTOCICLETA'
-            | 'CAMIONETA') || null,
         nuevaPlazaId: null,
         observaciones: abonoResponse.observaciones || null
       })
     }
   }, [abonoResponse, playaId, plazaId, fechaHoraInicio, form])
 
-  const hayCambioVehiculo = useMemo(() => {
-    if (!patenteOriginal || !tipoVehiculoOriginal) return false
+  const hayCambioPatente = useMemo(() => {
+    if (!patenteOriginal) return false
 
-    const patenteCambio =
+    return (
       watchPatente && watchPatente !== '' && watchPatente !== patenteOriginal
-    const tipoCambio =
-      watchTipoVehiculo && watchTipoVehiculo !== tipoVehiculoOriginal
-
-    return patenteCambio || tipoCambio
-  }, [watchPatente, watchTipoVehiculo, patenteOriginal, tipoVehiculoOriginal])
+    )
+  }, [watchPatente, patenteOriginal])
 
   const onSubmit = async (data: UpdateAbonoFormData) => {
     try {
@@ -165,7 +155,6 @@ export default function EditAbonoDialog({
           data.nuevaPatente && data.nuevaPatente !== ''
             ? data.nuevaPatente
             : undefined,
-        nuevoTipoVehiculo: data.nuevoTipoVehiculo || undefined,
         nuevaPlazaId:
           data.nuevaPlazaId && data.nuevaPlazaId !== ''
             ? data.nuevaPlazaId
@@ -279,12 +268,12 @@ export default function EditAbonoDialog({
               </div>
             </div>
 
-            {hayCambioVehiculo && (
+            {hayCambioPatente && (
               <Alert>
                 <Info className="h-4 w-4" />
                 <AlertDescription>
-                  Nota: Al cambiar el vehículo, el precio mensual se actualizará
-                  a la tarifa vigente.
+                  Nota: Solo se puede cambiar la patente, manteniendo el mismo
+                  tipo de vehículo. El precio mensual no cambiará.
                 </AlertDescription>
               </Alert>
             )}
@@ -313,41 +302,25 @@ export default function EditAbonoDialog({
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="nuevoTipoVehiculo"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tipo de vehículo</FormLabel>
-                    <Select
-                      onValueChange={(value) =>
-                        field.onChange(
-                          value as 'AUTOMOVIL' | 'MOTOCICLETA' | 'CAMIONETA'
-                        )
-                      }
-                      value={field.value || undefined}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecciona el tipo" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="AUTOMOVIL">
-                          {TIPO_VEHICULO_LABEL.AUTOMOVIL}
-                        </SelectItem>
-                        <SelectItem value="MOTOCICLETA">
-                          {TIPO_VEHICULO_LABEL.MOTOCICLETA}
-                        </SelectItem>
-                        <SelectItem value="CAMIONETA">
-                          {TIPO_VEHICULO_LABEL.CAMIONETA}
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="space-y-2">
+                <label className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                  Tipo de vehículo
+                </label>
+                <div className="border-input bg-muted ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50">
+                  {tipoVehiculoOriginal
+                    ? TIPO_VEHICULO_LABEL[
+                        tipoVehiculoOriginal as
+                          | 'AUTOMOVIL'
+                          | 'MOTOCICLETA'
+                          | 'CAMIONETA'
+                      ]
+                    : '-'}
+                </div>
+                <p className="text-muted-foreground text-xs">
+                  El tipo de vehículo no se puede modificar. Para cambiar el
+                  tipo, debe cancelar este abono y crear uno nuevo.
+                </p>
+              </div>
             </div>
 
             <FormField
