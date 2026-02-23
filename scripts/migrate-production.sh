@@ -59,6 +59,14 @@ else
     
     echo "📌 Project ref: $PROJECT_REF"
     echo "📦 Linking to Supabase project..."
+    
+    # Check if supabase CLI is available
+    if ! command -v supabase &> /dev/null; then
+        echo "⚠️  Supabase CLI not found. Skipping linking and migrations."
+        echo "   This is expected in CI/CD environments like Vercel."
+        exit 0
+    fi
+    
     supabase link --project-ref "$PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
     
     echo ""
