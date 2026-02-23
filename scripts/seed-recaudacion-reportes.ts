@@ -65,7 +65,8 @@ const supabaseServiceRoleKey =
   process.env.SUPABASE_SERVICE_KEY ||
   ''
 
-const isKeyPlausible = (key: string) => key.length > 40 && key.startsWith('ey')
+const isKeyPlausible = (key: string) =>
+  key.length > 40 && (key.startsWith('ey') || key.startsWith('sb_'))
 
 if (!supabaseUrl) {
   console.error('❌ Falta NEXT_PUBLIC_SUPABASE_URL.')

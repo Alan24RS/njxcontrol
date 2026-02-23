@@ -35,7 +35,7 @@ export default function MapaContainer() {
     isError,
     location
   } = useGeolocation({
-    askGeolocation: false // Cambiado a false para no pedir ubicación automáticamente
+    askGeolocation: true // Habilitado para mostrar playas cercanas a la ubicación actual
   })
 
   const {

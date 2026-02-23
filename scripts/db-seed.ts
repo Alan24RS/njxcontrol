@@ -61,7 +61,8 @@ async function seedDatabase() {
   console.log('\n📊 Seeding datos de reportes (recaudación)...')
   try {
     execSync('node --import tsx scripts/seed-recaudacion-reportes.ts', {
-      stdio: 'inherit'
+      stdio: 'inherit',
+      env: process.env
     })
     console.log('   ✅ Reportes seed finalizado')
   } catch (error: any) {

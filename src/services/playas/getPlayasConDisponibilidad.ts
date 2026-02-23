@@ -22,10 +22,12 @@ export async function getPlayasConDisponibilidad(): Promise<
 > {
   return unstable_cache(
     async (): Promise<ApiResponse<PlayaConDisponibilidad[]>> => {
-      // Usar cliente público sin autenticación para datos públicos
+      // Usar service role key para acceder a datos públicos (RLS no aplica con service role)
       const supabase = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        process.env.SUPABASE_SERVICE_ROLE_KEY !== undefined
+          ? process.env.SUPABASE_SERVICE_ROLE_KEY
+          : process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
       )
 
       // Consultar la vista v_playas_disponibilidad que calcula disponibilidad en tiempo real
