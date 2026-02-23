@@ -62,10 +62,10 @@ jobs:
       - name: 🔍 Check for orphaned migrations in database
         run: |
           echo "🔍 Checking for migrations in database not present in code..."
-          
+
           # Get migrations from database
           supabase migration list > migration_status.txt || true
-          
+
           # Check if there are any migrations marked as applied in DB but not in local files
           if grep -E "Remote migration versions not found" migration_status.txt 2>/dev/null; then
             echo "⚠️  Found migrations in database not present in local code."
