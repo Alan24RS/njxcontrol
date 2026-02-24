@@ -4,7 +4,7 @@ import { useCallback, useEffect } from 'react'
 import { useFormContext } from 'react-hook-form'
 
 import {
-  // AddressAutocomplete, // TODO: TEMP FIX - REVERTIR CUANDO MAPS FUNCIONE
+  AddressAutocomplete,
   FormControl,
   FormField,
   FormItem,
@@ -12,6 +12,7 @@ import {
   FormMessage,
   Input
 } from '@/components/ui'
+import { GooglePlaceDetails } from '@/services/google'
 
 // import type { GooglePlaceDetails } from '@/services/google' // TODO: TEMP FIX - REVERTIR CUANDO MAPS FUNCIONE
 import ScheduleBuilder from './ScheduleBuilder'
@@ -160,7 +161,7 @@ export default function Fieldset({ namePrefix = '' }: FieldsetProps) {
   return (
     <>
       {/* TODO: TEMP FIX - REVERTIR CUANDO MAPS FUNCIONE */}
-      {/* <AddressAutocomplete
+      <AddressAutocomplete
         onAddressSelect={(details: GooglePlaceDetails) => {
           const direccionSimple = details.direccion
 
@@ -222,7 +223,7 @@ export default function Fieldset({ namePrefix = '' }: FieldsetProps) {
         displayAddress={watch(getFieldName('displayAddress'))}
         latitude={watch(getFieldName('latitud'))}
         longitude={watch(getFieldName('longitud'))}
-      /> */}
+      />
 
       <FormField
         control={control}
